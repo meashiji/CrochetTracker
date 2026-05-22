@@ -14,11 +14,13 @@ checkpoint:
     - topic: "primary persona scope"
       decision: "user themselves first; crochet enthusiasts broadly if useful later"
     - topic: "auth model"
-      decision: "local only; no auth; data lives in browser storage on-device. Cross-device sync deferred to v2."
+      decision: "account-based (email + password OR magic link); cloud sync across devices; offline use cached locally and synced on reconnect. ~4-week timeline accepted in exchange for solving the phone/laptop split."
     - topic: "pattern input"
       decision: "copy/paste plain text only for v1; PDF import deferred to v2"
     - topic: "mvp timeline"
-      decision: "1-2 weeks after-hours"
+      decision: "revised to ~4 weeks after-hours once cloud sync added; trimmed to ~3.5 weeks by deferring PWA install and mobile UX polish (responsive layout still in scope). Target 2026-07-05 with fallbacks 2026-08-10, 2026-09-14."
+    - topic: "mobile scope"
+      decision: "middle path — responsive layout so phone browsers work, but PWA install and dedicated mobile UX polish deferred to v2"
   frs_drafted: 10
   quality_check_status: accepted
 product_type: web-app
@@ -27,7 +29,7 @@ target_scale:
   qps: low
   data_volume: small
 timeline_budget:
-  mvp_weeks: 2
+  mvp_weeks: 4
   hard_deadline: "2026-07-05"
   hard_deadline_fallbacks: ["2026-08-10", "2026-09-14"]
   after_hours_only: true
@@ -73,8 +75,9 @@ The app holds, for each element repetition within a project, a row-completion st
 ## Non-Functional Requirements
 
 - A row state change (mark / unmark / set in-progress) is reflected in the UI within 100 ms of the user's tap — no spinner, no loading state.
-- The app is fully usable on a mobile device — touch targets, layout, and interactions are sized for one-handed use while holding yarn.
+- The app's layout adapts responsively to phone-sized screens — a user can open it in a mobile browser, read the pattern, and tap rows. Full one-handed mobile UX polish (oversized touch targets, gesture optimization) is acceptable to defer to v2.
 - All features work without an active internet connection — no action requires a network request to complete.
+- Changes made while offline are reconciled with the server once connectivity returns; the user does not observe lost, duplicated, or silently reverted row marks after a reconnect.
 
 ## User Stories
 
@@ -87,7 +90,8 @@ The app holds, for each element repetition within a project, a row-completion st
 #### Acceptance Criteria
 - Marked rows are visually distinct from unmarked rows (green highlight or equivalent)
 - The state shown matches what was last saved — no data loss on re-open
-- No login, save button, or any manual persistence step required
+- After initial sign-in, no save button or manual persistence step is required during normal use
+- Cross-device: the same project state appears on every signed-in device the user owns
 
 ## Non-Goals
 
@@ -95,7 +99,7 @@ The app holds, for each element repetition within a project, a row-completion st
 - **No pattern sharing or community features.** No public pattern library, no sharing between users, no social feed. This is a personal tracking tool.
 - **No team or multi-user workspaces.** One account, one user's projects. No collaboration, no shared project access.
 - **No automatic pattern parsing intelligence.** The app splits pasted text by line (best-effort) and lets the user adjust boundaries manually. No AI/ML row detection in v1.
-- **No cross-device sync in v1.** Data lives in the browser on the user's device. Sync (account, server, multi-device) is deferred to v2 to keep the MVP within a 2-week build window.
+- **No PWA install or dedicated mobile UX polish in v1.** The app is responsive (works in a mobile browser) but skips the "Add to home screen" PWA setup and the touch-target / one-handed-use refinements. Both deferred to v2.
 
 ## Vision & Problem Statement
 
@@ -124,4 +128,12 @@ The critical moment: opening a project bag after a gap and needing to know "wher
 
 ## Access Control
 
-Single user; no auth; data lives in the browser's local storage on-device. The app opens directly to the user's projects with no login or account creation. Cross-device sync is explicitly out of v1 scope — deferred to v2.
+Single user with an account. The user signs up and logs in with email + password (or a magic link). Each user's projects and progress are stored server-side and synced across their devices — opening the app on phone and laptop shows the same data.
+
+The app caches data locally so it remains fully usable offline; changes are queued and synced automatically when a connection is restored.
+
+No role separation — flat single-user model per account. No admin, no shared projects, no team workspaces.
+
+## Timeline acknowledgment
+
+Acknowledged on 2026-05-21: ~3.5-week MVP requires sustained after-hours dedication across roughly a month, balancing scope (account-based cloud sync, local caching, responsive layout for laptop + phone) against the July 5th target. User accepted the trade-off in exchange for solving the phone/laptop data split. PWA install and dedicated mobile UX polish were deferred from v1 to trim ~0.5 weeks from the original 4-week estimate. Fallback dates (2026-08-10, 2026-09-14) remain if the work runs long.
