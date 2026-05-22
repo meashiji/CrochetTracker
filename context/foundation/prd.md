@@ -88,10 +88,10 @@ The critical moment: opening a project bag after a gap and needing to know "wher
 
 ## Non-Functional Requirements
 
-- A row state change (mark / unmark / set in-progress) is reflected in the UI within 100 ms of the user's tap.
+- A row state change (mark / unmark / set in-progress) is reflected in the UI within 100 ms of the user's tap, under normal connection conditions.
 - The app's layout adapts to phone-sized screens — a user can open it on a phone, read the pattern, and tap rows. Full one-handed mobile UX polish is acceptable to defer to v2.
-- All features remain usable without an active internet connection — no user action requires connectivity to complete.
-- Changes made while offline reconcile with the user's other signed-in devices once connectivity returns; the user does not observe lost, duplicated, or silently reverted row marks after a reconnect.
+- An active connection is required during use; every interaction (marking rows, opening projects, signing in) reaches the server live. Sync is live, not offline-buffered.
+- A brief network interruption during normal use does not silently lose a row mark — the action either completes successfully or surfaces a clear retry signal to the user.
 
 ## Business Logic
 
@@ -103,7 +103,7 @@ The app holds, for each element repetition within a project, a row-completion st
 
 Single user with an account. The user signs up and logs in with email + password or a magic link. Each user's projects and progress follow them across all their signed-in devices — opening the app on phone and laptop shows the same data.
 
-The app remains fully usable offline; changes made without connectivity are reconciled automatically when a connection is restored.
+An active connection is required during use. Marking rows, opening projects, and signing in all reach the server live — there is no offline cache or queue. If the connection drops mid-session, interactions surface a retry signal rather than queueing silently.
 
 No role separation — flat single-user model per account. No admin, no shared projects, no team workspaces. An unauthenticated visitor lands on a sign-in / sign-up screen and cannot reach any project view until signed in.
 
@@ -114,10 +114,11 @@ No role separation — flat single-user model per account. No admin, no shared p
 - **No team or multi-user workspaces.** One account, one user's projects. No collaboration, no shared project access.
 - **No automatic pattern parsing intelligence.** The app splits pasted text by line (best-effort) and lets the user adjust boundaries manually. No smart or automated row detection in v1.
 - **No installable home-screen experience or dedicated mobile UX polish in v1.** The app is usable on a phone browser but skips the "Add to home screen" install setup and the touch-target / one-handed-use refinements. Both deferred to v2.
+- **No offline capability in v1.** The app is server-driven; every interaction requires an active connection. Offline-first behaviour (local cache, queued writes, conflict reconciliation) is explicitly deferred to v2. The trade-off was made consciously to fit the 4-week solo timeline with a Python-only stack — the developer's skill match outweighed the offline UX gap.
 
 ## Open Questions
 
-1. **Sync conflict resolution strategy.** When the same row state diverges across devices (e.g., row marked done on phone offline while marked in-progress on laptop online), what is the canonical reconciliation rule — last-write-wins by timestamp, device priority, prompt the user on conflict? Owner: user. Block: no (needed for downstream design, not for PRD acceptance).
+1. **Live-sync error UX.** When a row-mark request fails (network blip, server error, auth expiry), what does the user see — inline toast, banner, modal? Owner: user. Block: no (downstream design decision).
 2. **Account recovery flow.** If the user loses access to their password or magic-link email, what is the recovery path? Owner: user. Block: no.
 3. **Stitch reference content (FR-009).** Which stitch codes should the reference panel cover — US notation, UK notation, both? What is the source of the glossary content? Owner: user. Block: no (nice-to-have FR).
 4. **Pattern row-boundary editor UX (FR-004 / FR-005).** How does the user adjust row boundaries after the best-effort parse — drag-and-drop split, click-to-merge, edit the raw text directly? Owner: user. Block: no (downstream design decision).

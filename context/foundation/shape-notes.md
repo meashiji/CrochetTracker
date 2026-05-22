@@ -14,7 +14,9 @@ checkpoint:
     - topic: "primary persona scope"
       decision: "user themselves first; crochet enthusiasts broadly if useful later"
     - topic: "auth model"
-      decision: "account-based (email + password OR magic link); cloud sync across devices; offline use cached locally and synced on reconnect. ~4-week timeline accepted in exchange for solving the phone/laptop split."
+      decision: "account-based (email + password OR magic link); cloud sync across devices; live server-driven (no offline cache). Offline-first deferred to v2."
+    - topic: "offline-first"
+      decision: "deferred to v2. Reason: a Python-only server-rendered stack (FastAPI + Jinja + HTMX) fits the solo developer's skills and the 4-week timeline; true offline-first requires a JS frontend layer that doesn't. Online-only with live sync is the v1 trade-off."
     - topic: "pattern input"
       decision: "copy/paste plain text only for v1; PDF import deferred to v2"
     - topic: "mvp timeline"
@@ -76,8 +78,8 @@ The app holds, for each element repetition within a project, a row-completion st
 
 - A row state change (mark / unmark / set in-progress) is reflected in the UI within 100 ms of the user's tap — no spinner, no loading state.
 - The app's layout adapts responsively to phone-sized screens — a user can open it in a mobile browser, read the pattern, and tap rows. Full one-handed mobile UX polish (oversized touch targets, gesture optimization) is acceptable to defer to v2.
-- All features work without an active internet connection — no action requires a network request to complete.
-- Changes made while offline are reconciled with the server once connectivity returns; the user does not observe lost, duplicated, or silently reverted row marks after a reconnect.
+- An active connection is required during use; every interaction (marking rows, opening projects, signing in) reaches the server. Sync is live, not offline-buffered.
+- Brief network blips during normal use should not lose a row mark — the action either completes successfully or surfaces a clear retry signal to the user.
 
 ## User Stories
 
@@ -100,6 +102,7 @@ The app holds, for each element repetition within a project, a row-completion st
 - **No team or multi-user workspaces.** One account, one user's projects. No collaboration, no shared project access.
 - **No automatic pattern parsing intelligence.** The app splits pasted text by line (best-effort) and lets the user adjust boundaries manually. No AI/ML row detection in v1.
 - **No PWA install or dedicated mobile UX polish in v1.** The app is responsive (works in a mobile browser) but skips the "Add to home screen" PWA setup and the touch-target / one-handed-use refinements. Both deferred to v2.
+- **No offline capability in v1.** The app is server-driven; every interaction requires an active connection. Offline-first behaviour (local cache, queued writes, conflict reconciliation) is explicitly deferred to v2. The trade-off was made consciously to fit the 4-week solo timeline with a Python-only stack — the developer's FastAPI fluency outweighed the offline UX gap.
 
 ## Vision & Problem Statement
 
@@ -130,10 +133,10 @@ The critical moment: opening a project bag after a gap and needing to know "wher
 
 Single user with an account. The user signs up and logs in with email + password (or a magic link). Each user's projects and progress are stored server-side and synced across their devices — opening the app on phone and laptop shows the same data.
 
-The app caches data locally so it remains fully usable offline; changes are queued and synced automatically when a connection is restored.
+An active connection is required during use. Marking rows, opening projects, and signing in all reach the server live — there is no offline cache or queue. If connection drops mid-session, interactions surface a retry signal rather than queueing silently.
 
 No role separation — flat single-user model per account. No admin, no shared projects, no team workspaces.
 
 ## Timeline acknowledgment
 
-Acknowledged on 2026-05-21: ~3.5-week MVP requires sustained after-hours dedication across roughly a month, balancing scope (account-based cloud sync, local caching, responsive layout for laptop + phone) against the July 5th target. User accepted the trade-off in exchange for solving the phone/laptop data split. PWA install and dedicated mobile UX polish were deferred from v1 to trim ~0.5 weeks from the original 4-week estimate. Fallback dates (2026-08-10, 2026-09-14) remain if the work runs long.
+Acknowledged on 2026-05-21: ~3.5-week MVP requires sustained after-hours dedication across roughly a month, balancing scope (account-based live cloud sync, responsive layout for laptop + phone) against the July 5th target. User accepted the trade-off in exchange for solving the phone/laptop data split. PWA install, dedicated mobile UX polish, and offline-first capability were deferred from v1 — the latter to enable a Python-only stack (FastAPI + Jinja + HTMX) that matches the developer's skills. Fallback dates (2026-08-10, 2026-09-14) remain if the work runs long.
