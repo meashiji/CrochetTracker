@@ -10,4 +10,4 @@ def health():
 
 @app.get("/")
 def index():
-    return {"message": "CrochetTracker is running"}
+    return {"message": "CrochetTracker is running! <3"}
