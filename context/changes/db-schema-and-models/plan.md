@@ -271,25 +271,25 @@ This is the first migration — there is no existing data. Downgrade (`-1`) drop
 
 #### Automated
 
-- [x] 1.1 `uv sync` completes without error after adding sqlmodel, asyncpg, alembic
-- [x] 1.2 `uv run python -c "from app.db import engine, get_session; print('db ok')"` prints `db ok`
-- [x] 1.3 `uv run python -c "from app.config import DATABASE_URL; assert 'asyncpg' in DATABASE_URL"` passes
+- [x] 1.1 `uv sync` completes without error after adding sqlmodel, asyncpg, alembic — b44924b
+- [x] 1.2 `uv run python -c "from app.db import engine, get_session; print('db ok')"` prints `db ok` — b44924b
+- [x] 1.3 `uv run python -c "from app.config import DATABASE_URL; assert 'asyncpg' in DATABASE_URL"` passes — b44924b
 
 #### Manual
 
-- [x] 1.4 `fly secrets list` shows DATABASE_URL present
-- [x] 1.5 App starts without errors when DATABASE_URL is set locally
+- [x] 1.4 `fly secrets list` shows DATABASE_URL present — b44924b
+- [x] 1.5 App starts without errors when DATABASE_URL is set locally — b44924b
 
 ### Phase 2: SQLModel Models
 
 #### Automated
 
-- [ ] 2.1 `uv run python -c "from app.models import User, Project, Element, ElementRepetition, Row, RowState; print('models ok')"` prints `models ok`
-- [ ] 2.2 `uv run python -c "from sqlmodel import SQLModel; from app.models import *; print(list(SQLModel.metadata.tables.keys()))"` lists all 6 tables
+- [x] 2.1 `uv run python -c "from app.models import User, Project, Element, ElementRepetition, Row, RowState; print('models ok')"` prints `models ok`
+- [x] 2.2 `uv run python -c "from sqlmodel import SQLModel; from app.models import *; print(list(SQLModel.metadata.tables.keys()))"` lists all 6 tables
 
 #### Manual
 
-- [ ] 2.3 All model files have correct FK references, UniqueConstraints, and nullable fields as specced
+- [x] 2.3 All model files have correct FK references, UniqueConstraints, and nullable fields as specced
 
 ### Phase 3: Alembic Setup + Migration + Fly Release Command
 
