@@ -284,12 +284,12 @@ This is the first migration — there is no existing data. Downgrade (`-1`) drop
 
 #### Automated
 
-- [x] 2.1 `uv run python -c "from app.models import User, Project, Element, ElementRepetition, Row, RowState; print('models ok')"` prints `models ok`
-- [x] 2.2 `uv run python -c "from sqlmodel import SQLModel; from app.models import *; print(list(SQLModel.metadata.tables.keys()))"` lists all 6 tables
+- [x] 2.1 `uv run python -c "from app.models import User, Project, Element, ElementRepetition, Row, RowState; print('models ok')"` prints `models ok` — 79b212d
+- [x] 2.2 `uv run python -c "from sqlmodel import SQLModel; from app.models import *; print(list(SQLModel.metadata.tables.keys()))"` lists all 6 tables — 79b212d
 
 #### Manual
 
-- [x] 2.3 All model files have correct FK references, UniqueConstraints, and nullable fields as specced
+- [x] 2.3 All model files have correct FK references, UniqueConstraints, and nullable fields as specced — 79b212d
 
 ### Phase 3: Alembic Setup + Migration + Fly Release Command
 

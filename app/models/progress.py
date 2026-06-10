@@ -17,7 +17,10 @@ class RowState(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     element_repetition_id: int = Field(foreign_key="element_repetition.id", index=True)
-    row_id: int = Field(foreign_key="row.id")
+    row_id: int = Field(foreign_key="row.id", index=True)
     state: RowStateEnum = Field(default=RowStateEnum.not_started)
     stitch_position: int | None = None
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)},
+    )
