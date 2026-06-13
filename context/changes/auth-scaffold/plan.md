@@ -373,14 +373,14 @@ None beyond existing constraints (`pool_size=3, max_overflow=0` in `app/db.py` i
 
 #### Automated
 
-- [x] 1.1 `uv sync` installs the new dependencies cleanly
-- [x] 1.2 `uv run python -c "from app.models.user import User"` imports without error
-- [x] 1.3 `uv run alembic upgrade head` applies cleanly against a local/dev Postgres
-- [x] 1.4 `uv run alembic downgrade -1` then `uv run alembic upgrade head` round-trips cleanly on the same dev DB
+- [x] 1.1 `uv sync` installs the new dependencies cleanly — 2190d64
+- [x] 1.2 `uv run python -c "from app.models.user import User"` imports without error — 2190d64
+- [x] 1.3 `uv run alembic upgrade head` applies cleanly against a local/dev Postgres — 2190d64
+- [x] 1.4 `uv run alembic downgrade -1` then `uv run alembic upgrade head` round-trips cleanly on the same dev DB — 2190d64
 
 #### Manual
 
-- [ ] 1.5 `user` has the new nullable `password_hash` column, and `magic_link_token` table exists with expected columns/indexes/FK (dev DB)
+- [x] 1.5 `user` has the new nullable `password_hash` column, and `magic_link_token` table exists with expected columns/indexes/FK (dev DB) — 2190d64
 
 ### Phase 2: Session middleware, route protection, base templates
 
