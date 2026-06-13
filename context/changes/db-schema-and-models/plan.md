@@ -214,6 +214,16 @@ The asyncio runner pattern (Alembic 1.12+ docs): the sync `do_run_migrations(con
 
 **Contract:** Add a `[deploy]` section with `release_command = "alembic upgrade head"`. The command runs inside the app's Docker image (where `uv run alembic` is available). No other fly.toml changes needed.
 
+#### 4b. `Dockerfile` + `app/config.py` — deploy-time fixes (discovered during 3.5 verification)
+
+**Files:** `Dockerfile`, `app/config.py`
+
+**Intent:** Not originally planned, but required to make `fly deploy`'s `release_command` succeed (success criterion 3.5).
+
+**Contract:**
+- `Dockerfile`: `COPY alembic.ini ./` and `COPY alembic/ ./alembic/` so the migration scripts ship in the image (otherwise Alembic fails with "No 'script_location' key found").
+- `app/config.py`: translate the `sslmode` query param Fly's `DATABASE_URL` secret includes into `ssl` (e.g. `sslmode=disable` → `ssl=disable`), since asyncpg's SQLAlchemy dialect rejects `sslmode` but accepts `ssl` via `SSLMode.parse()` for all libpq sslmode values.
+
 #### 5. `app/main.py` — remove placeholder, confirm health route
 
 **File:** `app/main.py`
