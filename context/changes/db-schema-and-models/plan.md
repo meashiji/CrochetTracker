@@ -295,13 +295,13 @@ This is the first migration — there is no existing data. Downgrade (`-1`) drop
 
 #### Automated
 
-- [x] 3.1 `uv run alembic upgrade head` applies migration cleanly
-- [x] 3.2 `uv run alembic downgrade -1` reverts without errors
-- [x] 3.3 `uv run alembic upgrade head` re-applies cleanly (idempotency)
-- [x] 3.4 Model count check: `from app.models import *; from sqlmodel import SQLModel; len(SQLModel.metadata.tables) == 6`
+- [x] 3.1 `uv run alembic upgrade head` applies migration cleanly — 1269ace
+- [x] 3.2 `uv run alembic downgrade -1` reverts without errors — 1269ace
+- [x] 3.3 `uv run alembic upgrade head` re-applies cleanly (idempotency) — 1269ace
+- [x] 3.4 Model count check: `from app.models import *; from sqlmodel import SQLModel; len(SQLModel.metadata.tables) == 6` — 1269ace
 
 #### Manual
 
-- [x] 3.5 `fly deploy` log shows release_command `alembic upgrade head` exit 0
-- [x] 3.6 `fly proxy` + psql `\dt` shows all 6 tables
-- [x] 3.7 `\d row_state` confirms unique constraint on (element_repetition_id, row_id) and nullable stitch_position
+- [x] 3.5 `fly deploy` log shows release_command `alembic upgrade head` exit 0 — 1269ace
+- [x] 3.6 `fly proxy` + psql `\dt` shows all 6 tables — 1269ace
+- [x] 3.7 `\d row_state` confirms unique constraint on (element_repetition_id, row_id) and nullable stitch_position — 1269ace
