@@ -13,3 +13,11 @@ elif _raw.startswith("postgresql://"):
 _parts = urlsplit(_raw)
 _query = urlencode([("ssl" if k == "sslmode" else k, v) for k, v in parse_qsl(_parts.query)])
 DATABASE_URL = urlunsplit((_parts.scheme, _parts.netloc, _parts.path, _query, _parts.fragment))
+
+SECRET_KEY = os.environ["SECRET_KEY"]
+
+MAIL_USERNAME = os.environ["MAIL_USERNAME"]
+MAIL_PASSWORD = os.environ["MAIL_PASSWORD"]
+MAIL_FROM = os.environ["MAIL_FROM"]
+MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
