@@ -7,6 +7,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.middleware import AuthRedirectMiddleware
 from app.config import SECRET_KEY
 from app.models.user import User
+from app.routes.auth import router as auth_router
 
 app = FastAPI(title="CrochetTracker")
 
@@ -21,6 +22,8 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 templates = Jinja2Templates(directory="app/templates")
+
+app.include_router(auth_router)
 
 
 @app.get("/health")
