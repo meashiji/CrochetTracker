@@ -37,7 +37,7 @@
   - Tradeoff: Risk of forgetting until S-01 hits the same 500 with real project data already inserted, making the fix more involved.
   - Confidence: MEDIUM — depends on discipline to revisit before S-01.
   - Blind spot: None significant.
-- **Decision**: PENDING
+- **Decision**: FIXED via Fix A — `app/models/project.py` (Project.created_at/updated_at, Element.created_at) and `app/models/progress.py` (RowState.updated_at) now use `sa_type=DateTime(timezone=True)`; migration `1354362dad07` applied and round-tripped on dev DB (127.0.0.1:5433).
 
 ### F2 — Login timing oracle reveals account existence
 
@@ -47,7 +47,7 @@
 - **Location**: app/routes/auth.py:65
 - **Detail**: When `user is None`, `verify_password` is short-circuited and never called — the unknown-email path skips an argon2 hash verification (~tens of ms), making it measurably faster than the wrong-password path. Classic user-enumeration timing oracle.
 - **Fix**: Always call `verify_password` (against a fixed dummy hash when `user is None`) so both paths take comparable time.
-- **Decision**: PENDING
+- **Decision**: FIXED — added `DUMMY_PASSWORD_HASH` to `app/auth/security.py`; `app/routes/auth.py` now always calls `verify_password`, using the dummy hash when `user is None`.
 
 ### F3 — "No password set" message confirms account existence
 
@@ -66,7 +66,7 @@
   - Tradeoff: Magic-link-only users get a confusing generic error instead of guidance toward `/auth/magic-link`.
   - Confidence: MEDIUM — would require a plan amendment since this contradicts the Phase 3 contract.
   - Blind spot: None significant.
-- **Decision**: PENDING
+- **Decision**: FIXED via Fix B — `app/routes/auth.py` now returns "Invalid email or password." for magic-link-only accounts too (treating `password_hash is None` like a wrong password, via `DUMMY_PASSWORD_HASH`). Recorded as a plan amendment in `change.md` Notes. A Phase-4-scope two-step login redesign (email-first, Notion/Slack-style) was discussed and deferred to Phase 4 planning.
 
 ### F4 — No minimum password length / non-empty check on signup
 
@@ -76,7 +76,7 @@
 - **Location**: app/routes/auth.py:24-25
 - **Detail**: `password: str = Form(...)` only enforces presence, not minimum length — an empty string is a valid form value and would be hashed and stored as-is.
 - **Fix**: Add a minimum-length check (e.g. 8 chars) before `hash_password`, re-rendering `signup.html` with an error on failure.
-- **Decision**: PENDING
+- **Decision**: FIXED — `app/routes/auth.py` now rejects passwords under 8 chars on signup, re-rendering `signup.html` with an error.
 
 ### F5 — No email normalization (case sensitivity)
 
@@ -86,7 +86,7 @@
 - **Location**: app/routes/auth.py:28,55
 - **Detail**: `"Foo@x.com"` and `"foo@x.com"` are distinct accounts. Consider lowercasing/stripping email on signup and login lookups.
 - **Fix**: Lowercase/strip email before storage and lookup.
-- **Decision**: PENDING
+- **Decision**: FIXED — `app/routes/auth.py` now normalizes (`.strip().lower()`) email before storage on signup and before lookup on login.
 
 ### F6 — No CSRF token on state-changing auth forms
 
@@ -96,7 +96,7 @@
 - **Location**: app/templates/auth/signup.html, login.html; app/main.py
 - **Detail**: `SessionMiddleware(same_site="lax")` provides reasonable baseline protection. Likely an accepted gap at this MVP stage — flagged for awareness, not blocking.
 - **Fix**: N/A — accept as-is unless threat model changes.
-- **Decision**: PENDING
+- **Decision**: ACCEPTED — `same_site=lax` is sufficient for MVP. Noted in `change.md` as a future possibility if the threat model changes (e.g. multi-user data sharing, payments).
 
 ### F7 — Only IntegrityError is caught on signup commit
 
@@ -106,7 +106,7 @@
 - **Location**: app/routes/auth.py:30-38
 - **Detail**: Other exceptions (e.g. connection drop) propagate as an unhandled 500. `get_session` rolls back safely either way; acceptable for MVP without a custom error page.
 - **Fix**: N/A — acceptable for now.
-- **Decision**: PENDING
+- **Decision**: ACCEPTED — `get_session` rolls back safely on any exception; user sees a generic 500 instead of a friendly form error. UX-only, acceptable for MVP.
 
 ### F8 — TIMESTAMP→TIMESTAMPTZ cast is session-timezone-dependent
 
@@ -116,4 +116,4 @@
 - **Location**: alembic/versions/583dfd4fd36a_user_and_magic_link_timestamps_to_.py:24-39
 - **Detail**: `ALTER COLUMN TYPE ... TIMESTAMPTZ` interprets existing naive values using the DB session's timezone (dev DB: `Europe/Warsaw`, not UTC). Verified `user`/`magic_link_token` were empty at migration time, so no values were actually affected this time. Worth remembering if a future TIMESTAMP→TIMESTAMPTZ migration runs against tables with existing data.
 - **Fix**: N/A — no action needed now; keep in mind for future migrations of this shape.
-- **Decision**: PENDING
+- **Decision**: ACCEPTED — both migrations (583dfd4fd36a and 1354362dad07) confirmed run against empty tables; no data affected. Note-only for future TIMESTAMP→TIMESTAMPTZ migrations with existing data.

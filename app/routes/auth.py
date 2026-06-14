@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.security import hash_password, verify_password
+from app.auth.security import DUMMY_PASSWORD_HASH, hash_password, verify_password
 from app.db import get_session
 from app.models.user import User
 
@@ -25,6 +25,14 @@ async def signup(
     password: str = Form(...),
     session: AsyncSession = Depends(get_session),
 ):
+    if len(password) < 8:
+        return templates.TemplateResponse(
+            request,
+            "auth/signup.html",
+            {"error": "Password must be at least 8 characters."},
+        )
+
+    email = email.strip().lower()
     user = User(email=email, password_hash=hash_password(password))
     session.add(user)
     try:
@@ -52,17 +60,13 @@ async def login(
     password: str = Form(...),
     session: AsyncSession = Depends(get_session),
 ):
+    email = email.strip().lower()
     result = await session.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
 
-    if user is not None and user.password_hash is None:
-        return templates.TemplateResponse(
-            request,
-            "auth/login.html",
-            {"error": "This account has no password set. Use magic-link sign-in instead."},
-        )
-
-    if user is None or not verify_password(password, user.password_hash):
+    has_password = user is not None and user.password_hash is not None
+    password_hash = user.password_hash if has_password else DUMMY_PASSWORD_HASH
+    if not has_password or not verify_password(password, password_hash):
         return templates.TemplateResponse(
             request,
             "auth/login.html",

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import DateTime, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
@@ -22,5 +22,6 @@ class RowState(SQLModel, table=True):
     stitch_position: int | None = None
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=DateTime(timezone=True),
         sa_column_kwargs={"onupdate": lambda: datetime.now(timezone.utc)},
     )
