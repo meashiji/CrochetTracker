@@ -386,13 +386,13 @@ None beyond existing constraints (`pool_size=3, max_overflow=0` in `app/db.py` i
 
 #### Automated
 
-- [ ] 2.1 `uv run python -c "from app.main import app"` imports without error
-- [ ] 2.2 `uv run uvicorn app.main:app` starts; `/health` returns 200 JSON without a session
+- [x] 2.1 `uv run python -c "from app.main import app"` imports without error
+- [x] 2.2 `uv run uvicorn app.main:app` starts; `/health` returns 200 JSON without a session
 
 #### Manual
 
-- [ ] 2.3 Visiting `/` without a session redirects (303) to `/auth/login`
-- [ ] 2.4 `/health` is reachable without a session
+- [x] 2.3 Visiting `/` without a session redirects (303) to `/auth/login`
+- [x] 2.4 `/health` is reachable without a session
 
 ### Phase 3: Password auth — signup, login, logout
 
