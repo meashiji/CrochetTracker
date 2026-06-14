@@ -398,16 +398,16 @@ None beyond existing constraints (`pool_size=3, max_overflow=0` in `app/db.py` i
 
 #### Automated
 
-- [x] 3.1 `uv run python -c "from app.main import app"` imports without error
-- [x] 3.2 `uv run alembic upgrade head` still applies cleanly
+- [x] 3.1 `uv run python -c "from app.main import app"` imports without error — bd09749
+- [x] 3.2 `uv run alembic upgrade head` still applies cleanly — bd09749
 
 #### Manual
 
-- [x] 3.3 Sign up with a new email + password → redirected to `/`, shown "Logged in as ..."
-- [x] 3.4 Log out → redirected to `/auth/login`; `/` redirects back to `/auth/login`
-- [x] 3.5 Log in with the same credentials → redirected to `/`
-- [x] 3.6 Sign up again with the same email → duplicate-email error
-- [x] 3.7 Log in with a wrong password → generic invalid-credentials error
+- [x] 3.3 Sign up with a new email + password → redirected to `/`, shown "Logged in as ..." — bd09749
+- [x] 3.4 Log out → redirected to `/auth/login`; `/` redirects back to `/auth/login` — bd09749
+- [x] 3.5 Log in with the same credentials → redirected to `/` — bd09749
+- [x] 3.6 Sign up again with the same email → duplicate-email error — bd09749
+- [x] 3.7 Log in with a wrong password → generic invalid-credentials error — bd09749
 
 ### Phase 4: Magic-link auth — request + verify
 
