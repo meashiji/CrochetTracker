@@ -18,3 +18,5 @@ archived_at: null
 - **Phase 4 addendum**: consider a two-step login flow (ask for email first, then show password field or magic-link option depending on account type), Notion/Slack-style. Raised during Phase 3 review triage; deferred to Phase 4 planning — would also affect the `/auth/login` form shape from Phase 3.
 
 - **Future possibility (F6, accepted as-is for now)**: add CSRF tokens to auth/state-changing forms if the threat model changes (e.g. multi-user data sharing, payments). Currently `SessionMiddleware(same_site="lax")` is considered sufficient — revisit before such a change ships.
+
+- **Plan amendment (Phase 4 review, F2)**: `POST /auth/magic-link` no longer get-or-creates a user. It only sends a magic link if the email already exists in the DB; unknown emails silently return the same "check your email" page. Magic link is login-only, not a registration path. This eliminates phantom account creation and matches the "if there is an account connected to this email" UX pattern. The plan's stated intent was get-or-create; this intentionally deviates from it.

@@ -103,22 +103,26 @@ async def magic_link_request(
     email = email.strip().lower()
     result = await session.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
-    if user is None:
-        user = User(email=email)
-        session.add(user)
-        await session.flush()
 
-    serialized, token_hash, expires_at = create_magic_link_token()
-    token_row = MagicLinkToken(
-        user_id=user.id,
-        token_hash=token_hash,
-        expires_at=expires_at,
-    )
-    session.add(token_row)
-    await session.commit()
+    if user is not None:
+        serialized, token_hash, expires_at = create_magic_link_token()
+        token_row = MagicLinkToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=expires_at,
+        )
+        session.add(token_row)
+        await session.commit()
 
-    verify_url = str(request.base_url).rstrip("/") + f"/auth/magic-link/verify?token={serialized}"
-    await send_magic_link_email(email, verify_url)
+        verify_url = str(request.base_url).rstrip("/") + f"/auth/magic-link/verify?token={serialized}"
+        try:
+            await send_magic_link_email(email, verify_url)
+        except Exception:
+            return templates.TemplateResponse(
+                request,
+                "auth/magic_link_request.html",
+                {"error": "Could not send the email — please try again."},
+            )
 
     return templates.TemplateResponse(request, "auth/magic_link_sent.html", {})
 

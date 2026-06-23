@@ -413,15 +413,15 @@ None beyond existing constraints (`pool_size=3, max_overflow=0` in `app/db.py` i
 
 #### Automated
 
-- [x] 4.1 `uv run python -c "from app.main import app"` imports without error
+- [x] 4.1 `uv run python -c "from app.main import app"` imports without error — 0e95c5b
 
 #### Manual
 
-- [x] 4.2 Magic link for a new email sends a real email and creates a `User` with `password_hash=NULL`
-- [x] 4.3 Clicking the link logs the user in and redirects to `/`
-- [x] 4.4 Re-clicking the consumed link shows the error page
-- [x] 4.5 Magic link for an existing password account also works
-- [x] 4.6 Requesting a second link does not invalidate the first — both independently log the user in (until each used once)
+- [x] 4.2 Magic link for a new email sends a real email and creates a `User` with `password_hash=NULL` — 0e95c5b
+- [x] 4.3 Clicking the link logs the user in and redirects to `/` — 0e95c5b
+- [x] 4.4 Re-clicking the consumed link shows the error page — 0e95c5b
+- [x] 4.5 Magic link for an existing password account also works — 0e95c5b
+- [x] 4.6 Requesting a second link does not invalidate the first — both independently log the user in (until each used once) — 0e95c5b
 
 ### Phase 5: Change password (recovery path)
 

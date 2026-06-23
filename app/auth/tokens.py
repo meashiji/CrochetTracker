@@ -6,6 +6,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from app.config import SECRET_KEY
 
+# Provides tamper-detection (HMAC) and expiry, not confidentiality — the URL itself is the secret.
 _serializer = URLSafeTimedSerializer(SECRET_KEY, salt="magic-link")
 
 
