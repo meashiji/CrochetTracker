@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.dependencies import get_current_user
 from app.auth.mail import send_magic_link_email
 from app.auth.security import DUMMY_PASSWORD_HASH, hash_password, verify_password
 from app.auth.tokens import create_magic_link_token, verify_magic_link_token
@@ -87,6 +88,41 @@ async def login(
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/auth/login", status_code=303)
+
+
+@router.get("/change-password")
+async def change_password_form(request: Request, user: User = Depends(get_current_user)):
+    return templates.TemplateResponse(request, "auth/change_password.html", {"user": user})
+
+
+@router.post("/change-password")
+async def change_password(
+    request: Request,
+    password: str = Form(...),
+    password_confirm: str = Form(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if password != password_confirm:
+        return templates.TemplateResponse(
+            request,
+            "auth/change_password.html",
+            {"user": user, "error": "Passwords do not match."},
+        )
+    if len(password) < 8:
+        return templates.TemplateResponse(
+            request,
+            "auth/change_password.html",
+            {"user": user, "error": "Password must be at least 8 characters."},
+        )
+    user.password_hash = hash_password(password)
+    session.add(user)
+    await session.commit()
+    return templates.TemplateResponse(
+        request,
+        "auth/change_password.html",
+        {"user": user, "success": "Password updated successfully."},
+    )
 
 
 @router.get("/magic-link")
