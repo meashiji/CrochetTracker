@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Log in with a magic link</h1>
+    {% if error %}
+        <p style="color: red">{{ error }}</p>
+    {% endif %}
+    <p>Enter your email and we'll send you a one-click login link.</p>
+    <form action="/auth/magic-link" method="post">
+        <label>Email <input type="email" name="email" required></label><br>
+        <button type="submit">Send magic link</button>
+    </form>
+    <p><a href="/auth/login">Log in with password instead</a></p>
+{% endblock %}

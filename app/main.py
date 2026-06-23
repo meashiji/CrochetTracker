@@ -26,6 +26,11 @@ templates = Jinja2Templates(directory="app/templates")
 app.include_router(auth_router)
 
 
+@app.exception_handler(Exception)
+async def server_error_handler(request: Request, exc: Exception):
+    return templates.TemplateResponse(request, "500.html", {}, status_code=500)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

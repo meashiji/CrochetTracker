@@ -19,5 +19,6 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 MAIL_USERNAME = os.environ["MAIL_USERNAME"]
 MAIL_PASSWORD = os.environ["MAIL_PASSWORD"]
 MAIL_FROM = os.environ["MAIL_FROM"]
+MAIL_FROM_NAME = os.environ.get("MAIL_FROM_NAME", "CrochetTracker")
 MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
 MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
