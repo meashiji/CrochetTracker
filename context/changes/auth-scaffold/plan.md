@@ -427,10 +427,10 @@ None beyond existing constraints (`pool_size=3, max_overflow=0` in `app/db.py` i
 
 #### Automated
 
-- [x] 5.1 `uv run python -c "from app.main import app"` imports without error
+- [x] 5.1 `uv run python -c "from app.main import app"` imports without error — 9535321
 
 #### Manual
 
-- [x] 5.2 `/auth/change-password` while logged out redirects to `/auth/login`
-- [x] 5.3 Magic-link-only account can set a password, then log in with email + password
-- [x] 5.4 Existing password account can change password, old password stops working
+- [x] 5.2 `/auth/change-password` while logged out redirects to `/auth/login` — 9535321
+- [x] 5.3 Magic-link-only account can set a password, then log in with email + password — 9535321
+- [x] 5.4 Existing password account can change password, old password stops working — 9535321
