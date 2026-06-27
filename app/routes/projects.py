@@ -22,7 +22,7 @@ async def project_list(
     session: AsyncSession = Depends(get_session),
 ):
     result = await session.execute(
-        select(Project).where(Project.user_id == user.id).order_by(Project.updated_at.desc())
+        select(Project).where(Project.user_id == user.id).order_by(Project.updated_at.desc()).limit(500)
     )
     projects = result.scalars().all()
     return templates.TemplateResponse(request, "projects/list.html", {"user": user, "projects": projects})
@@ -44,6 +44,10 @@ async def project_create(
     if not name:
         return templates.TemplateResponse(
             request, "projects/new.html", {"user": user, "error": "Project name is required."}
+        )
+    if len(name) > 50:
+        return templates.TemplateResponse(
+            request, "projects/new.html", {"user": user, "error": "Project name must be 50 characters or fewer."}
         )
     now = datetime.now(timezone.utc)
     project = Project(user_id=user.id, name=name, created_at=now, updated_at=now)

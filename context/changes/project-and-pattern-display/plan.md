@@ -346,16 +346,16 @@ No migrations required. All tables are in place from F-01 and F-02.
 
 #### Automated
 
-- [x] 1.1 App starts without import errors after adding router and templates
-- [x] 1.2 `parse_pattern` unit test passes: multi-line input, blank lines, whitespace, empty string
+- [x] 1.1 App starts without import errors after adding router and templates — b25e656
+- [x] 1.2 `parse_pattern` unit test passes: multi-line input, blank lines, whitespace, empty string — b25e656
 
 #### Manual
 
-- [x] 1.3 `GET /projects/` shows empty-state message and "New project" link
-- [x] 1.4 Submitting project name creates project and redirects to `/projects/{id}`
-- [x] 1.5 Blank name submission re-renders form with error message
-- [x] 1.6 `/projects/` lists the new project by name
-- [x] 1.7 `GET /` index shows "My projects" link
+- [x] 1.3 `GET /projects/` shows empty-state message and "New project" link — b25e656
+- [x] 1.4 Submitting project name creates project and redirects to `/projects/{id}` — b25e656
+- [x] 1.5 Blank name submission re-renders form with error message — b25e656
+- [x] 1.6 `/projects/` lists the new project by name — b25e656
+- [x] 1.7 `GET /` index shows "My projects" link — b25e656
 
 ### Phase 2: Element Detail + Pattern Parsing
 
