@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>New Project</h1>
+{% if error %}<p style="color: red">{{ error }}</p>{% endif %}
+<form method="post" action="/projects/new">
+    <label>Project name<br>
+        <input name="name" required autofocus>
+    </label>
+    <br><br>
+    <button type="submit">Create project</button>
+</form>
+<p><a href="/projects/">Back to projects</a></p>
+{% endblock %}

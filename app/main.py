@@ -8,6 +8,7 @@ from app.auth.middleware import AuthRedirectMiddleware
 from app.config import SECRET_KEY
 from app.models.user import User
 from app.routes.auth import router as auth_router
+from app.routes.projects import router as projects_router
 
 app = FastAPI(title="CrochetTracker")
 
@@ -24,6 +25,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 app.include_router(auth_router)
+app.include_router(projects_router)
 
 
 @app.exception_handler(Exception)
