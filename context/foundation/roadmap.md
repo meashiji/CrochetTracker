@@ -37,6 +37,7 @@ This is the moment the product hypothesis is proven: the app reliably answers "w
 | S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | proposed |
 | S-03 | repeats-and-stitch-position  | track repeat elements independently; record stitch position        | S-02          | FR-003, FR-010                        | proposed |
 | S-04 | stitch-reference-panel       | open a reference panel showing stitch codes and descriptions       | F-02          | FR-009                                | proposed |
+| P-01 | ui-polish                    | visual design pass — typography, colors, spacing, responsive       | S-02          | —                                     | proposed |
 
 ## Streams
 
@@ -142,6 +143,19 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** Low — this is a static reference panel with no data model dependencies. Blocked only by the content decision (Open Question 3).
 - **Status:** blocked
 
+### P-01: UI polish
+
+- **Outcome:** the app looks intentional — consistent typography, color palette, spacing, and readable layout on mobile and desktop; no raw browser-default styling.
+- **Change ID:** ui-polish
+- **PRD refs:** —
+- **Prerequisites:** S-02 (north star validated; component shapes are stable)
+- **Parallel with:** S-03, S-04
+- **Blockers:** —
+- **Unknowns:**
+  - Which CSS framework — Tailwind CSS, Pico.css, or plain custom CSS? Owner: user. Block: no (decide in /10x-plan ui-polish).
+- **Risk:** Low — purely additive; no data model or route changes. Doing this before features stabilise risks rework if component structure changes.
+- **Status:** proposed
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                   | Suggested issue title                                        | Ready for `/10x-plan` | Notes                                               |
@@ -152,6 +166,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-02       | row-marking-and-persistence | Row marking (3 states) + auto-jump + persistence (north star) | no                   | Needs S-01 done; this is the validation milestone   |
 | S-03       | repeats-and-stitch-position | Repeat element tracking + stitch position recording          | no                    | Needs S-02 done                                     |
 | S-04       | stitch-reference-panel      | Stitch reference panel (nice-to-have)                        | no                    | Blocked on stitch content decision (Open Question 3)|
+| P-01       | ui-polish                   | Visual design pass (typography, colors, spacing, responsive) | no                    | Plan after S-02; CSS framework TBD                  |
 
 ## Open Roadmap Questions
 
