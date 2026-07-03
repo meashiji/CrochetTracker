@@ -1,11 +1,15 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth.dependencies import get_current_user
 from app.auth.middleware import AuthRedirectMiddleware
 from app.config import SECRET_KEY
+from app.db import get_session
+from app.models.project import Project
 from app.models.user import User
 from app.routes.auth import router as auth_router
 from app.routes.projects import router as projects_router
@@ -39,5 +43,16 @@ def health():
 
 
 @app.get("/")
-async def index(request: Request, user: User = Depends(get_current_user)):
-    return templates.TemplateResponse(request, "index.html", {"user": user})
+async def index(
+    request: Request,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if user is None:
+        return templates.TemplateResponse(request, "index.html", {"user": None, "projects": []})
+
+    result = await session.execute(
+        select(Project).where(Project.user_id == user.id).order_by(Project.updated_at.desc()).limit(500)
+    )
+    projects = result.scalars().all()
+    return templates.TemplateResponse(request, "index.html", {"user": user, "projects": projects})

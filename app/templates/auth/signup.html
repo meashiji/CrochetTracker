@@ -1,14 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Sign up</h1>
-    {% if error %}
-        <p style="color: red">{{ error }}</p>
-    {% endif %}
-    <form action="/auth/signup" method="post">
-        <label>Email <input type="email" name="email" required></label><br>
-        <label>Password <input type="password" name="password" required></label><br>
-        <button type="submit">Sign up</button>
-    </form>
-    <p><a href="/auth/login">Already have an account? Log in</a></p>
+<section class="panel auth-layout auth-layout-centered">
+    <div class="auth-card auth-card-centered">
+        <p class="auth-badge">New here?</p>
+        <h1>We are happy to have you on board</h1>
+        <p class="lead">Create your account and turn your crochet ideas into a calm, organized plan.</p>
+        <p class="lead subtle">You will gain a simple place to keep patterns, notes, and project progress in one cozy workspace.</p>
+
+        {% if error %}
+            <p class="auth-error">{{ error }}</p>
+        {% endif %}
+
+        <form class="auth-form" action="/auth/signup" method="post">
+            <label>Email
+                <input type="email" name="email" required>
+            </label>
+            <label>Password
+                <input type="password" name="password" required>
+            </label>
+            <button type="submit">Create account</button>
+        </form>
+
+        <div class="auth-links">
+            <a href="/auth/login">Already have an account? Log in</a>
+        </div>
+    </div>
+</section>
 {% endblock %}

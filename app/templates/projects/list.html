@@ -1,15 +1,24 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>My Projects</h1>
-<p><a href="/projects/new">New project</a></p>
-{% if projects %}
-<ul>
-    {% for project in projects %}
-    <li><a href="/projects/{{ project.id }}">{{ project.name }}</a></li>
-    {% endfor %}
-</ul>
-{% else %}
-<p>No projects yet — <a href="/projects/new">create one</a>.</p>
-{% endif %}
+<section class="panel">
+    <p class="eyebrow">Project board</p>
+    <h1>My Projects</h1>
+    <p class="lead">A tidy place to keep your next crochet idea, in progress piece, or finished pattern.</p>
+    <div class="actions">
+        <a class="btn" href="/projects/new">New project</a>
+    </div>
+
+    {% if projects %}
+    <ul class="project-list">
+        {% for project in projects %}
+        <li class="project-item">
+            <a href="/projects/{{ project.id }}">{{ project.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="subtle">No projects yet — <a href="/projects/new">create one</a>.</p>
+    {% endif %}
+</section>
 {% endblock %}

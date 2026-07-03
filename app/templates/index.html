@@ -1,8 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>CrochetTracker</h1>
-    <p>Logged in as {{ user.email }}</p>
-    <p><a href="/auth/change-password">Change password</a></p>
-    <p><a href="/projects/">My projects</a></p>
+<section class="panel hero">
+    <div>
+        <p class="eyebrow">Crochet planner</p>
+        <h1>Keep your handmade ideas organized in a softer, colorful space.</h1>
+        <p class="lead">Track projects, notes, and next steps with a calm palette inspired by yarn and petals.</p>
+        <div class="actions">
+            <a class="btn" href="/projects/new">Start a new project</a>
+            <a class="btn btn-outline" href="/projects/">View projects</a>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <h2>Welcome</h2>
+        {% if user %}
+            <p class="subtle">Signed in as {{ user.email }}.</p>
+            <p class="subtle">You can update your password or jump straight into your project list.</p>
+            <p><a href="/auth/change-password">Change password</a></p>
+        {% else %}
+            <p class="subtle">Sign in to save your projects and keep everything in one place.</p>
+        {% endif %}
+    </div>
+</section>
+
+{% if user %}
+<section class="panel project-section">
+    <div class="section-heading">
+        <p class="eyebrow">Your projects</p>
+        <h2>Keep your crochet work close at hand</h2>
+    </div>
+
+    {% if projects %}
+    <ul class="project-list">
+        {% for project in projects %}
+        <li class="project-item">
+            <a href="/projects/{{ project.id }}">{{ project.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="subtle">You have no projects yet. Start your first one and it will appear here.</p>
+    {% endif %}
+</section>
+{% endif %}
 {% endblock %}
