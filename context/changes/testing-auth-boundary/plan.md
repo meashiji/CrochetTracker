@@ -301,32 +301,32 @@ in-process via httpx + ASGITransport against the test DB. No mocking.
 
 #### Automated
 
-- [x] 1.1 `uv sync` installs httpx and pytest-asyncio without errors
-- [x] 1.2 `uv run pytest --collect-only` exits 0 with no import errors
-- [x] 1.3 `uv run pytest --collect-only` still collects `tests/test_pattern.py` tests
+- [x] 1.1 `uv sync` installs httpx and pytest-asyncio without errors — f747266
+- [x] 1.2 `uv run pytest --collect-only` exits 0 with no import errors — f747266
+- [x] 1.3 `uv run pytest --collect-only` still collects `tests/test_pattern.py` tests — f747266
 
 #### Manual
 
-- [x] 1.4 `crochet_tracker_test` database exists and collection step passes without fixture warnings
+- [x] 1.4 `crochet_tracker_test` database exists and collection step passes without fixture warnings — f747266
 
 ### Phase 2: No-DB auth boundary tests
 
 #### Automated
 
-- [x] 2.1 `uv run pytest tests/test_auth_boundary.py -k "unauthenticated or tampered" -v` → 2 passed
+- [x] 2.1 `uv run pytest tests/test_auth_boundary.py -k "unauthenticated or tampered" -v` → 2 passed — f747266
 
 #### Manual
 
-- [x] 2.2 Test output shows both test names with PASSED, no asyncio warnings
+- [x] 2.2 Test output shows both test names with PASSED, no asyncio warnings — f747266
 
 ### Phase 3: DB-backed auth tests + cookbook update
 
 #### Automated
 
-- [x] 3.1 `uv run pytest tests/test_auth_boundary.py -v` → 4 passed, 0 failed
-- [x] 3.2 `uv run pytest tests/ -v` → 10 tests pass (6 existing + 4 new)
+- [x] 3.1 `uv run pytest tests/test_auth_boundary.py -v` → 4 passed, 0 failed — f747266
+- [x] 3.2 `uv run pytest tests/ -v` → 10 tests pass (6 existing + 4 new) — f747266
 
 #### Manual
 
-- [x] 3.3 `§6.2` in `test-plan.md` filled in with fixture pattern and run command
-- [x] 3.4 `§3` Phase 1 row status updated to `complete` in `test-plan.md`
+- [x] 3.3 `§6.2` in `test-plan.md` filled in with fixture pattern and run command — f747266
+- [x] 3.4 `§3` Phase 1 row status updated to `complete` in `test-plan.md` — f747266
