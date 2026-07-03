@@ -80,7 +80,7 @@ as artifacts appear on disk.
 | # | Phase name | Goal | Risks covered | Test types | Status | Change folder |
 |---|-----------|------|---------------|-----------|--------|---------------|
 | 1 | Auth-boundary integration tests | Prove route protection and session validation work; bootstrap test infrastructure (httpx TestClient, pytest fixtures, test DB) | #2, #4 | Integration (TestClient, pytest fixtures, separate test DB) | complete | context/changes/testing-auth-boundary/ |
-| 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection and DB write correctness for core user flows | #1, #3, #6 | Integration (multi-user fixtures, TestClient POST + DB verify) | not started | — |
+| 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection and DB write correctness for core user flows | #1, #3, #6 | Integration (multi-user fixtures, TestClient POST + DB verify) | researched | context/changes/testing-write-path-ownership/ |
 | 3 | Migration drift quality gate | Name `alembic check` as a required CI gate and verify it catches real drift | #5 | CI gate naming (wiring deferred to Module 2 Lesson 5) | not started | — |
 
 **Status vocabulary** (parser literals — do not rename):
