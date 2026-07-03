@@ -1,6 +1,7 @@
 import pytest
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
+from app.models.project import Project
 from app.models.user import User
 
 
@@ -28,3 +29,14 @@ async def test_orphaned_user_id_returns_401(test_user, async_client, db_session)
 
     response = await async_client.get("/projects/", follow_redirects=False)
     assert response.status_code == 401
+
+
+async def test_homepage_shows_user_projects(test_user, async_client, db_session):
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    response = await async_client.get("/", follow_redirects=False)
+
+    assert response.status_code == 200
+    assert "Sunset shawl" in response.text

@@ -80,6 +80,7 @@ async def async_client():
 async def test_user(async_client, db_session):
     """Create a test user via signup (sets session cookie on async_client), yield the User row."""
     from sqlalchemy import delete, select
+    from app.models.project import Project
     from app.models.user import User
 
     response = await async_client.post(
@@ -93,5 +94,6 @@ async def test_user(async_client, db_session):
     user = result.scalar_one()
     yield user
 
+    await db_session.execute(delete(Project).where(Project.user_id == user.id))
     await db_session.execute(delete(User).where(User.id == user.id))
     await db_session.commit()
