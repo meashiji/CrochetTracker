@@ -361,16 +361,16 @@ No migrations required. All tables are in place from F-01 and F-02.
 
 #### Automated
 
-- [ ] 2.1 App starts without import errors after new routes added
-- [ ] 2.2 `parse_pattern` edge cases tested: single-line, trailing whitespace, `\r\n` endings
+- [x] 2.1 App starts without import errors after new routes added
+- [x] 2.2 `parse_pattern` edge cases tested: single-line, trailing whitespace, `\r\n` endings
 
 #### Manual
 
-- [ ] 2.3 Element detail shows empty pattern form with "No pattern pasted yet"
-- [ ] 2.4 Pasting a multi-line pattern saves and displays numbered rows with grey dots
-- [ ] 2.5 Row + ElementRepetition + RowState records exist in DB after paste
-- [ ] 2.6 Re-pasting shows orange warning banner; saving replaces rows correctly
-- [ ] 2.7 Pasting blank text re-renders form with error message
+- [x] 2.3 Element detail shows empty pattern form with "No pattern pasted yet"
+- [x] 2.4 Pasting a multi-line pattern saves and displays numbered rows with grey dots
+- [x] 2.5 Row + ElementRepetition + RowState records exist in DB after paste
+- [x] 2.6 Re-pasting shows orange warning banner; saving replaces rows correctly
+- [x] 2.7 Pasting blank text re-renders form with error message
 
 ### Phase 3: Project Detail + Add Element
 

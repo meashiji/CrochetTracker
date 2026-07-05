@@ -3,13 +3,16 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
 from app.db import get_session
-from app.models.project import Element, Project
+from app.models.pattern import Row
+from app.models.progress import RowState, RowStateEnum
+from app.models.project import Element, ElementRepetition, Project
 from app.models.user import User
+from app.services.pattern import parse_pattern
 
 router = APIRouter(prefix="/projects")
 templates = Jinja2Templates(directory="app/templates")
@@ -56,3 +59,100 @@ async def project_create(
     element = Element(project_id=project.id, name=None, repeat_count=1, created_at=now)
     session.add(element)
     return RedirectResponse(url=f"/projects/{project.id}", status_code=303)
+
+
+@router.get("/{project_id}/elements/{element_id}")
+async def element_detail(
+    request: Request,
+    project_id: int,
+    element_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project = await session.get(Project, project_id)
+    if project is None or project.user_id != user.id:
+        raise HTTPException(status_code=404)
+    element = await session.get(Element, element_id)
+    if element is None or element.project_id != project.id:
+        raise HTTPException(status_code=404)
+    result = await session.execute(
+        select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+    )
+    rows = result.scalars().all()
+    return templates.TemplateResponse(
+        request,
+        "projects/element_detail.html",
+        {"user": user, "project": project, "element": element, "rows": rows, "has_rows": len(rows) > 0},
+    )
+
+
+@router.post("/{project_id}/elements/{element_id}")
+async def element_save_pattern(
+    request: Request,
+    project_id: int,
+    element_id: int,
+    pattern_text: str = Form(default=""),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project = await session.get(Project, project_id)
+    if project is None or project.user_id != user.id:
+        raise HTTPException(status_code=404)
+    element = await session.get(Element, element_id)
+    if element is None or element.project_id != project.id:
+        raise HTTPException(status_code=404)
+
+    parsed = parse_pattern(pattern_text)
+    if not parsed:
+        existing = await session.execute(
+            select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+        )
+        rows = existing.scalars().all()
+        return templates.TemplateResponse(
+            request,
+            "projects/element_detail.html",
+            {
+                "user": user,
+                "project": project,
+                "element": element,
+                "rows": rows,
+                "has_rows": len(rows) > 0,
+                "error": "Pattern text produced no rows — please check the input.",
+            },
+        )
+
+    # Delete existing rows in FK-safe order: RowStates → Rows + ElementRepetitions
+    rep_ids_sub = select(ElementRepetition.id).where(ElementRepetition.element_id == element.id)
+    await session.execute(delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub)))
+    await session.execute(delete(Row).where(Row.element_id == element.id))
+    await session.execute(delete(ElementRepetition).where(ElementRepetition.element_id == element.id))
+
+    element.pattern_text = pattern_text.strip()
+    session.add(element)
+
+    new_rows = [Row(element_id=element.id, position=pos, content=content) for pos, content in parsed]
+    for row in new_rows:
+        session.add(row)
+
+    new_reps = [
+        ElementRepetition(element_id=element.id, repetition_number=i)
+        for i in range(1, element.repeat_count + 1)
+    ]
+    for rep in new_reps:
+        session.add(rep)
+
+    await session.flush()  # populate PKs before RowState inserts reference them
+
+    for rep in new_reps:
+        for row in new_rows:
+            session.add(RowState(element_repetition_id=rep.id, row_id=row.id, state=RowStateEnum.not_started))
+
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+
+    # Commit before redirect so the follow-up GET sees the new rows.
+    # get_session also commits after the handler returns, but the browser can
+    # send the redirect GET before that cleanup runs.
+    await session.commit()
+
+    return RedirectResponse(url=f"/projects/{project_id}/elements/{element_id}", status_code=303)
