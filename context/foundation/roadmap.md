@@ -3,7 +3,7 @@ project: CrochetTracker
 version: 1
 status: draft
 created: 2026-06-05
-updated: 2026-06-05
+updated: 2026-07-09
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -31,10 +31,10 @@ This is the moment the product hypothesis is proven: the app reliably answers "w
 
 | ID   | Change ID                    | Outcome (user can …)                                              | Prerequisites | PRD refs                              | Status   |
 |------|------------------------------|-------------------------------------------------------------------|---------------|---------------------------------------|----------|
-| F-01 | db-schema-and-models         | (foundation) ORM models, migrations, DB connection in place       | —             | FR-001–010                            | ready    |
-| F-02 | auth-scaffold                | (foundation) sign up, sign in; routes protected per-user          | F-01          | Access Control                        | proposed |
-| S-01 | project-and-pattern-display  | create a project, paste a pattern, and see it as a list of rows   | F-01, F-02    | FR-001, FR-002, FR-004, FR-005, FR-008 | proposed |
-| S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | proposed |
+| F-01 | db-schema-and-models         | (foundation) ORM models, migrations, DB connection in place       | —             | FR-001–010                            | done     |
+| F-02 | auth-scaffold                | (foundation) sign up, sign in; routes protected per-user          | F-01          | Access Control                        | done     |
+| S-01 | project-and-pattern-display  | create a project, paste a pattern, and see it as a list of rows   | F-01, F-02    | FR-001, FR-002, FR-004, FR-005, FR-008 | done     |
+| S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | ready    |
 | S-03 | repeats-and-stitch-position  | track repeat elements independently; record stitch position        | S-02          | FR-003, FR-010                        | proposed |
 | S-04 | stitch-reference-panel       | open a reference panel showing stitch codes and descriptions       | F-02          | FR-009                                | proposed |
 | P-01 | ui-polish                    | visual design pass — typography, colors, spacing, responsive       | S-02          | —                                     | proposed |
@@ -74,7 +74,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The RowState schema (not-started / in-progress / done + optional stitch position) must be correct before S-02 is built — a schema change after S-02 lands requires a data migration with live data. Define it carefully in /10x-plan db-schema-and-models before writing any migration.
-- **Status:** ready
+- **Status:** done
 
 ### F-02: Auth scaffold
 
@@ -88,7 +88,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Which library handles email + password + magic link sessions in FastAPI + Jinja2? (fastapi-users, authlib, custom flow?) Owner: user. Block: no — /10x-plan auth-scaffold resolves this.
 - **Risk:** No standard FastAPI library covers magic links out of the box; this is the highest-research foundation. Sequenced immediately after F-01 because every S-NN slice needs it — a bad auth choice is expensive to swap once project routes depend on it.
-- **Status:** proposed
+- **Status:** done
 
 ## Slices
 
@@ -103,7 +103,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Pattern row-boundary editor UX (FR-004 / FR-005): how does the user adjust boundaries after best-effort parse — drag-to-split, click-to-merge, or raw text edit? Owner: user. Block: no (design decision for /10x-plan, best-effort parse ships first).
 - **Risk:** The best-effort row parser (split by line, user-adjustable) must not block delivery — ship the simplest split first, make boundaries editable in a follow-up if needed. Don't let parser complexity delay S-02.
-- **Status:** proposed
+- **Status:** done — all 3 phases implemented and impl-reviewed (context/changes/project-and-pattern-display/)
 
 ### S-02: Row marking + persistence (north star)
 
@@ -116,7 +116,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Live-sync error UX: when a row-mark request fails (network blip, server error), what does the user see — inline toast, banner, modal? Owner: user. Block: no (PRD Open Question 1 — downstream design decision).
 - **Risk:** The 100ms NFR (row state change reflected in UI within 100ms) requires HTMX to update the DOM optimistically or the server to respond fast enough. Sequenced first among slices because it proves the core hypothesis — don't defer it for UX polish.
-- **Status:** proposed
+- **Status:** ready — prerequisite S-01 is done; no change folder opened yet
 
 ### S-03: Repeat element tracking + stitch position
 
@@ -160,10 +160,10 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 | Roadmap ID | Change ID                   | Suggested issue title                                        | Ready for `/10x-plan` | Notes                                               |
 |------------|-----------------------------|--------------------------------------------------------------|-----------------------|-----------------------------------------------------|
-| F-01       | db-schema-and-models        | DB schema: SQLModel models + Alembic migrations              | yes                   | Run `/10x-plan db-schema-and-models`                |
-| F-02       | auth-scaffold               | Auth: sign-up, sign-in, magic link, session middleware        | no                    | Needs F-01 done first                               |
-| S-01       | project-and-pattern-display | Project creation + pattern paste + row list display          | no                    | Needs F-01, F-02 done                               |
-| S-02       | row-marking-and-persistence | Row marking (3 states) + auto-jump + persistence (north star) | no                   | Needs S-01 done; this is the validation milestone   |
+| F-01       | db-schema-and-models        | DB schema: SQLModel models + Alembic migrations              | done                  | Implemented                                          |
+| F-02       | auth-scaffold               | Auth: sign-up, sign-in, magic link, session middleware        | done                  | Implemented                                          |
+| S-01       | project-and-pattern-display | Project creation + pattern paste + row list display          | done                  | Implemented, all 3 phases impl-reviewed              |
+| S-02       | row-marking-and-persistence | Row marking (3 states) + auto-jump + persistence (north star) | yes                  | Prerequisite S-01 done; run `/10x-new row-marking-and-persistence` — this is the validation milestone |
 | S-03       | repeats-and-stitch-position | Repeat element tracking + stitch position recording          | no                    | Needs S-02 done                                     |
 | S-04       | stitch-reference-panel      | Stitch reference panel (nice-to-have)                        | no                    | Blocked on stitch content decision (Open Question 3)|
 | P-01       | ui-polish                   | Visual design pass (typography, colors, spacing, responsive) | no                    | Plan after S-02; CSS framework TBD                  |
