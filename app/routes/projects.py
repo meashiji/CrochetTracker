@@ -20,15 +20,20 @@ templates = Jinja2Templates(directory="app/templates")
 MAX_PATTERN_LENGTH = 50_000
 
 
+async def _get_project(project_id: int, user: User, session: AsyncSession) -> Project:
+    project = await session.get(Project, project_id)
+    if project is None or project.user_id != user.id:
+        raise HTTPException(status_code=404)
+    return project
+
+
 async def _get_project_and_element(
     project_id: int,
     element_id: int,
     user: User,
     session: AsyncSession,
 ) -> tuple[Project, Element]:
-    project = await session.get(Project, project_id)
-    if project is None or project.user_id != user.id:
-        raise HTTPException(status_code=404)
+    project = await _get_project(project_id, user, session)
     element = await session.get(Element, element_id)
     if element is None or element.project_id != project.id:
         raise HTTPException(status_code=404)
@@ -85,10 +90,10 @@ async def project_detail(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    project = await session.get(Project, project_id)
-    if project is None or project.user_id != user.id:
-        raise HTTPException(status_code=404)
-    result = await session.execute(select(Element).where(Element.project_id == project.id))
+    project = await _get_project(project_id, user, session)
+    result = await session.execute(
+        select(Element).where(Element.project_id == project.id).order_by(Element.created_at.asc())
+    )
     elements = result.scalars().all()
     row_counts = await session.execute(
         select(Row.element_id, func.count(Row.id))
@@ -111,9 +116,7 @@ async def element_new_form(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    project = await session.get(Project, project_id)
-    if project is None or project.user_id != user.id:
-        raise HTTPException(status_code=404)
+    project = await _get_project(project_id, user, session)
     return templates.TemplateResponse(request, "projects/element_new.html", {"user": user, "project": project})
 
 
@@ -125,9 +128,7 @@ async def element_create(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    project = await session.get(Project, project_id)
-    if project is None or project.user_id != user.id:
-        raise HTTPException(status_code=404)
+    project = await _get_project(project_id, user, session)
     name = name.strip()
     if not name:
         return templates.TemplateResponse(
@@ -147,6 +148,10 @@ async def element_create(
     await session.flush()
     project.updated_at = now
     session.add(project)
+
+    # Commit before redirect so the follow-up GET sees the new element.
+    await session.commit()
+
     return RedirectResponse(url=f"/projects/{project_id}/elements/{element.id}", status_code=303)
 
 

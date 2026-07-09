@@ -1,5 +1,6 @@
 from sqlalchemy import delete, select
 
+from app.models.pattern import Row
 from app.models.project import Element, Project
 from app.models.user import User
 
@@ -13,6 +14,30 @@ async def test_project_detail_owner_sees_200(test_user, async_client, db_session
 
     assert response.status_code == 200
     assert "Sunset shawl" in response.text
+
+
+async def test_project_detail_shows_row_count(test_user, async_client, db_session):
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    element = Element(project_id=project.id, name="Body", repeat_count=1)
+    db_session.add(element)
+    await db_session.commit()
+
+    db_session.add_all(
+        Row(element_id=element.id, position=i, content=f"Row {i}") for i in range(1, 4)
+    )
+    await db_session.commit()
+
+    response = await async_client.get(f"/projects/{project.id}", follow_redirects=False)
+
+    assert response.status_code == 200
+    assert "3 rows" in response.text
+
+    await db_session.execute(delete(Row).where(Row.element_id == element.id))
+    await db_session.execute(delete(Element).where(Element.id == element.id))
+    await db_session.commit()
 
 
 async def test_project_detail_other_user_sees_404(test_user, async_client, db_session):
@@ -49,6 +74,9 @@ async def test_add_element_redirects_to_its_detail(test_user, async_client, db_s
     result = await db_session.execute(select(Element).where(Element.project_id == project.id))
     element = result.scalar_one()
     assert response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+
+    follow_up = await async_client.get(response.headers["location"], follow_redirects=False)
+    assert follow_up.status_code == 200
 
     # test_user's teardown only deletes Project rows; Element has no cascade, so
     # it must be removed first to avoid an FK violation there.
