@@ -257,5 +257,5 @@ None — no schema changes.
 
 #### Automated
 
-- [ ] 2.1 `uv run pytest tests/test_pattern_paste.py -v` passes, all 7 tests green
-- [ ] 2.2 `uv run pytest tests/ -v` passes in full
+- [x] 2.1 `uv run pytest tests/test_pattern_paste.py -v` passes, all 7 tests green
+- [x] 2.2 `uv run pytest tests/ -v` passes in full
