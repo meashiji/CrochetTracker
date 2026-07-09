@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .breadcrumb {
+        margin: 0 0 12px;
+        font-size: 0.88rem;
+        color: var(--muted);
+    }
+
+    .project-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+    }
+</style>
+
+<section class="panel">
+    <p class="breadcrumb"><a href="/projects/">Projects</a> › {{ project.name }}</p>
+    <p class="eyebrow">Project</p>
+    <h1>{{ project.name }}</h1>
+    <div class="actions">
+        <a class="btn" href="/projects/{{ project.id }}/elements/new">Add element</a>
+    </div>
+
+    {% if elements_with_counts %}
+    <ul class="project-list">
+        {% for element, row_count in elements_with_counts %}
+        <li class="project-item">
+            <a href="/projects/{{ project.id }}/elements/{{ element.id }}">{{ element.name or "Unnamed element" }}</a>
+            <span class="subtle">{% if row_count > 0 %}{{ row_count }} row{{ "s" if row_count != 1 else "" }}{% else %}No pattern yet{% endif %}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="subtle">No elements yet — <a href="/projects/{{ project.id }}/elements/new">add one</a>.</p>
+    {% endif %}
+</section>
+{% endblock %}

@@ -361,29 +361,29 @@ No migrations required. All tables are in place from F-01 and F-02.
 
 #### Automated
 
-- [x] 2.1 App starts without import errors after new routes added
-- [x] 2.2 `parse_pattern` edge cases tested: single-line, trailing whitespace, `\r\n` endings
+- [x] 2.1 App starts without import errors after new routes added — 487a73b
+- [x] 2.2 `parse_pattern` edge cases tested: single-line, trailing whitespace, `\r\n` endings — 487a73b
 
 #### Manual
 
-- [x] 2.3 Element detail shows empty pattern form with "No pattern pasted yet"
-- [x] 2.4 Pasting a multi-line pattern saves and displays numbered rows with grey dots
-- [x] 2.5 Row + ElementRepetition + RowState records exist in DB after paste
-- [x] 2.6 Re-pasting shows orange warning banner; saving replaces rows correctly
-- [x] 2.7 Pasting blank text re-renders form with error message
+- [x] 2.3 Element detail shows empty pattern form with "No pattern pasted yet" — 487a73b
+- [x] 2.4 Pasting a multi-line pattern saves and displays numbered rows with grey dots — 487a73b
+- [x] 2.5 Row + ElementRepetition + RowState records exist in DB after paste — 487a73b
+- [x] 2.6 Re-pasting shows orange warning banner; saving replaces rows correctly — 487a73b
+- [x] 2.7 Pasting blank text re-renders form with error message — 487a73b
 
 ### Phase 3: Project Detail + Add Element
 
 #### Automated
 
-- [ ] 3.1 App starts without import errors after all routes added
-- [ ] 3.2 `GET /projects/{id}` returns 404 for a different user's project
+- [x] 3.1 App starts without import errors after all routes added
+- [x] 3.2 `GET /projects/{id}` returns 404 for a different user's project
 
 #### Manual
 
-- [ ] 3.3 Project detail shows auto-element with correct row count
-- [ ] 3.4 "Add element" form validates blank name and shows error
-- [ ] 3.5 Adding a named element redirects to its element detail page
-- [ ] 3.6 New element appears on project detail with "No pattern yet"
-- [ ] 3.7 Project list allows switching between multiple projects
-- [ ] 3.8 Accessing another user's project URL returns 404
+- [x] 3.3 Project detail shows auto-element with correct row count
+- [x] 3.4 "Add element" form validates blank name and shows error
+- [x] 3.5 Adding a named element redirects to its element detail page
+- [x] 3.6 New element appears on project detail with "No pattern yet"
+- [x] 3.7 Project list allows switching between multiple projects
+- [x] 3.8 Accessing another user's project URL returns 404

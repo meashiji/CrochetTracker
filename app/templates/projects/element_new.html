@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="panel">
+    <p class="eyebrow">New element</p>
+    <h1>Add an element to {{ project.name }}</h1>
+    <p class="lead">Elements group rows of a pattern — like a sleeve, body, or motif.</p>
+
+    {% if error %}<p style="color: #a44f62">{{ error }}</p>{% endif %}
+
+    <form method="post" action="/projects/{{ project.id }}/elements/new">
+        <label>Element name
+            <input name="name" required autofocus maxlength="50" placeholder="e.g. Body, Sleeves">
+        </label>
+        <button type="submit">Add element</button>
+    </form>
+
+    <p class="subtle"><a href="/projects/{{ project.id }}">Back to project</a></p>
+</section>
+{% endblock %}
