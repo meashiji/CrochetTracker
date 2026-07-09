@@ -176,7 +176,36 @@ async def test_my_route_returns_200(test_user, async_client):
 
 ### 6.3 Adding a cross-user ownership test
 
-TBD — see §3 Phase 2. (Phase 2 introduces multi-user fixtures. This entry will document how to create two test users and assert ownership boundaries.)
+Reference implementation: `tests/test_project_routes.py::test_element_detail_other_user_sees_404`,
+`test_element_save_pattern_other_user_sees_404`, `test_element_detail_wrong_project_sees_404`
+
+**Fixture**: `second_user` (`tests/conftest.py`) — creates a second, independently authenticated user with
+its own `AsyncClient`/session and yields `(user, client)`. Unlike `test_user`, it manages its own client
+internally because the shared `async_client` fixture can only hold one session cookie at a time; a real
+cross-user IDOR test needs the "attacker" request to carry a genuinely distinct authenticated session, not
+just a directly inserted `User` row.
+
+**Pattern**:
+```python
+async def test_my_route_other_user_sees_404(test_user, second_user, db_session):
+    _second_user, second_client = second_user
+
+    # create the resource owned by test_user via db_session directly
+    resource = MyResource(user_id=test_user.id, ...)
+    db_session.add(resource)
+    await db_session.commit()
+
+    response = await second_client.get(f"/my-route/{resource.id}", follow_redirects=False)
+    assert response.status_code == 404
+```
+
+**Don't forget the "same owner, wrong parent" case** — e.g. an `element_id` that is valid but belongs to a
+different `project_id` than the one in the URL. A single cross-user test only proves the `user_id` check;
+resources nested under another resource (Project → Element → Row) need a second case proving the *parent*
+match, not just the *owner* match (see `test_element_detail_wrong_project_sees_404`).
+
+**Teardown**: delete child rows before parent rows (no cascade is defined on any FK in this schema) — e.g.
+delete `Element` rows before `test_user`'s own teardown deletes `Project` rows.
 
 ### 6.4 Adding a write-path DB-verify test
 
