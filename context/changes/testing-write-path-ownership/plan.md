@@ -250,12 +250,12 @@ None — no schema changes.
 
 #### Automated
 
-- [x] 1.1 `uv run pytest tests/test_project_routes.py -v` passes, including 3 new cross-user IDOR tests — 682ce00
-- [x] 1.2 `uv run pytest tests/ -v` passes in full (no regressions) — 682ce00
+- [x] 1.1 `uv run pytest tests/test_project_routes.py -v` passes, including 3 new cross-user IDOR tests — e4b7fe3
+- [x] 1.2 `uv run pytest tests/ -v` passes in full (no regressions) — e4b7fe3
 
 ### Phase 2: Pattern-paste DB write correctness + all-or-nothing verification
 
 #### Automated
 
-- [x] 2.1 `uv run pytest tests/test_pattern_paste.py -v` passes, all 7 tests green
-- [x] 2.2 `uv run pytest tests/ -v` passes in full
+- [x] 2.1 `uv run pytest tests/test_pattern_paste.py -v` passes, all 7 tests green — 9af3729
+- [x] 2.2 `uv run pytest tests/ -v` passes in full — 9af3729
