@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-06-27 (Phase 1 change opened)
+> Last updated: 2026-07-09 (Phase 2 complete — risks #3, #6 covered; #1 deferred, no implementing route)
 
 ---
 
@@ -80,7 +80,7 @@ as artifacts appear on disk.
 | # | Phase name | Goal | Risks covered | Test types | Status | Change folder |
 |---|-----------|------|---------------|-----------|--------|---------------|
 | 1 | Auth-boundary integration tests | Prove route protection and session validation work; bootstrap test infrastructure (httpx TestClient, pytest fixtures, test DB) | #2, #4 | Integration (TestClient, pytest fixtures, separate test DB) | complete | context/changes/testing-auth-boundary/ |
-| 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection and DB write correctness for core user flows | #1, #3, #6 | Integration (multi-user fixtures, TestClient POST + DB verify) | researched | context/changes/testing-write-path-ownership/ |
+| 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection and DB write correctness for core user flows | #3, #6 (#1 deferred — no implementing route exists) | Integration (multi-user fixtures, TestClient POST + DB verify) | complete | context/changes/testing-write-path-ownership/ |
 | 3 | Migration drift quality gate | Name `alembic check` as a required CI gate and verify it catches real drift | #5 | CI gate naming (wiring deferred to Module 2 Lesson 5) | not started | — |
 
 **Status vocabulary** (parser literals — do not rename):
@@ -176,11 +176,65 @@ async def test_my_route_returns_200(test_user, async_client):
 
 ### 6.3 Adding a cross-user ownership test
 
-TBD — see §3 Phase 2. (Phase 2 introduces multi-user fixtures. This entry will document how to create two test users and assert ownership boundaries.)
+Reference implementation: `tests/test_project_routes.py::test_element_detail_other_user_sees_404`,
+`test_element_save_pattern_other_user_sees_404`, `test_element_detail_wrong_project_sees_404`
+
+**Fixture**: `second_user` (`tests/conftest.py`) — creates a second, independently authenticated user with
+its own `AsyncClient`/session and yields `(user, client)`. Unlike `test_user`, it manages its own client
+internally because the shared `async_client` fixture can only hold one session cookie at a time; a real
+cross-user IDOR test needs the "attacker" request to carry a genuinely distinct authenticated session, not
+just a directly inserted `User` row.
+
+**Pattern**:
+```python
+async def test_my_route_other_user_sees_404(test_user, second_user, db_session):
+    _second_user, second_client = second_user
+
+    # create the resource owned by test_user via db_session directly
+    resource = MyResource(user_id=test_user.id, ...)
+    db_session.add(resource)
+    await db_session.commit()
+
+    response = await second_client.get(f"/my-route/{resource.id}", follow_redirects=False)
+    assert response.status_code == 404
+```
+
+**Don't forget the "same owner, wrong parent" case** — e.g. an `element_id` that is valid but belongs to a
+different `project_id` than the one in the URL. A single cross-user test only proves the `user_id` check;
+resources nested under another resource (Project → Element → Row) need a second case proving the *parent*
+match, not just the *owner* match (see `test_element_detail_wrong_project_sees_404`).
+
+**Teardown**: delete child rows before parent rows (no cascade is defined on any FK in this schema) — e.g.
+delete `Element` rows before `test_user`'s own teardown deletes `Project` rows.
 
 ### 6.4 Adding a write-path DB-verify test
 
-TBD — see §3 Phase 2. (Phase 2 establishes the pattern of POST → query DB → assert record content. This entry will document that pattern with a reference test.)
+Reference implementation: `tests/test_pattern_paste.py` (whole file; start with
+`test_pattern_paste_creates_matching_db_records`)
+
+**Pattern**: POST → query DB directly (not the rendered HTML) → assert record count *and* content match
+the expected transform. Do not stop at "the parser/service function returns the right value" — the DB write
+is a separate step from the pure function and can drift from it (wrong FK, wrong count, stale rows left
+behind). For a multi-table write, query every table the route is documented to touch and assert each one.
+
+```python
+async def test_my_write_creates_matching_db_records(test_user, async_client, db_session):
+    # 1. Arrange: create parent resource(s) via db_session directly.
+    # 2. Act: POST through async_client (real route, real ownership checks).
+    assert response.status_code == 303  # or whatever the route's success status is
+    # 3. Assert: query every table the route writes, compare count + content
+    #    against the pure-function output (e.g. parse_pattern()), not just row count.
+```
+
+**All-or-nothing is a distinct assertion from "the happy path is correct".** For any write path that can be
+rejected (validation failure, ownership failure), add a test that the rejection leaves the DB unchanged —
+zero new rows on a fresh resource, or the original rows untouched on a re-write rejection
+(`test_pattern_paste_rejected_repaste_leaves_existing_rows_intact` is the reference for the latter). This is
+the cheapest available proxy for "no silent partial write" when the target risk's own endpoint (e.g. a
+row-mark feature) doesn't exist yet.
+
+**Teardown for multi-table writes**: delete in FK-safe order — RowState → Row + ElementRepetition → Element
+→ (Project is handled by the owning fixture's teardown). See `_teardown()` helper in `test_pattern_paste.py`.
 
 ### 6.5 Checking migration drift
 

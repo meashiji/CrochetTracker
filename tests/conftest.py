@@ -97,3 +97,37 @@ async def test_user(async_client, db_session):
     await db_session.execute(delete(Project).where(Project.user_id == user.id))
     await db_session.execute(delete(User).where(User.id == user.id))
     await db_session.commit()
+
+
+@pytest.fixture
+async def second_user(db_session):
+    """Create a second, independently authenticated user with its own client/session.
+
+    Unlike `test_user`, this fixture owns its own `AsyncClient` — the shared `async_client`
+    fixture can only hold one session cookie at a time, and cross-user tests need the
+    "attacker" request to carry a genuinely distinct, real session rather than a directly
+    inserted `User` row.
+    """
+    from sqlalchemy import delete, select
+    from app.models.project import Project
+    from app.models.user import User
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="https://testserver",
+    ) as client:
+        response = await client.post(
+            "/auth/signup",
+            data={"email": "second@example.com", "password": "testpassword123"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303, f"Signup failed: {response.status_code}"
+
+        result = await db_session.execute(select(User).where(User.email == "second@example.com"))
+        user = result.scalar_one()
+
+        yield user, client
+
+        await db_session.execute(delete(Project).where(Project.user_id == user.id))
+        await db_session.execute(delete(User).where(User.id == user.id))
+        await db_session.commit()

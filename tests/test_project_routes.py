@@ -97,3 +97,75 @@ async def test_add_element_blank_name_shows_error(test_user, async_client, db_se
 
     assert response.status_code == 200
     assert "Element name is required." in response.text
+
+
+async def test_element_detail_other_user_sees_404(test_user, second_user, db_session):
+    _second_user, second_client = second_user
+
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    element = Element(project_id=project.id, name="Body", repeat_count=1)
+    db_session.add(element)
+    await db_session.commit()
+
+    response = await second_client.get(
+        f"/projects/{project.id}/elements/{element.id}", follow_redirects=False
+    )
+
+    assert response.status_code == 404
+
+    await db_session.execute(delete(Element).where(Element.id == element.id))
+    await db_session.commit()
+
+
+async def test_element_save_pattern_other_user_sees_404(test_user, second_user, db_session):
+    _second_user, second_client = second_user
+
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    element = Element(project_id=project.id, name="Body", repeat_count=1)
+    db_session.add(element)
+    await db_session.commit()
+
+    response = await second_client.post(
+        f"/projects/{project.id}/elements/{element.id}",
+        data={"pattern_text": "Row 1\nRow 2"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 404
+
+    rows = (
+        await db_session.execute(select(Row).where(Row.element_id == element.id))
+    ).scalars().all()
+    assert rows == []
+
+    await db_session.execute(delete(Element).where(Element.id == element.id))
+    await db_session.commit()
+
+
+async def test_element_detail_wrong_project_sees_404(test_user, async_client, db_session):
+    project_a = Project(user_id=test_user.id, name="Project A")
+    project_b = Project(user_id=test_user.id, name="Project B")
+    db_session.add(project_a)
+    db_session.add(project_b)
+    await db_session.commit()
+
+    element_of_b = Element(project_id=project_b.id, name="Body", repeat_count=1)
+    db_session.add(element_of_b)
+    await db_session.commit()
+
+    # Same owner as project_a, but element_of_b belongs to project_b — the URL pairing
+    # (project_a.id, element_of_b.id) must still 404 even though test_user owns both.
+    response = await async_client.get(
+        f"/projects/{project_a.id}/elements/{element_of_b.id}", follow_redirects=False
+    )
+
+    assert response.status_code == 404
+
+    await db_session.execute(delete(Element).where(Element.id == element_of_b.id))
+    await db_session.commit()
