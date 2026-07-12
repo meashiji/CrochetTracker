@@ -305,14 +305,14 @@ None. `RowState`, `RowStateEnum`, and `ElementRepetition` already exist from F-0
 
 #### Automated
 
-- [ ] 1.1 New/updated tests pass: `uv run pytest tests/test_row_state_routes.py -v`
-- [ ] 1.2 Full suite still passes: `uv run pytest`
+- [x] 1.1 New/updated tests pass: `uv run pytest tests/test_row_state_routes.py -v`
+- [x] 1.2 Full suite still passes: `uv run pytest`
 
 #### Manual
 
-- [ ] 1.3 Opening an element with a saved pattern shows every row with a visible not-started indicator
-- [ ] 1.4 Tapping a row's control cycles it not_started → in_progress → done → not_started, page reloading and showing new state each time
-- [ ] 1.5 Reopening the element (fresh session) shows the exact same states as last set
+- [x] 1.3 Opening an element with a saved pattern shows every row with a visible not-started indicator
+- [x] 1.4 Tapping a row's control cycles it not_started → in_progress → done → not_started, page reloading and showing new state each time
+- [x] 1.5 Reopening the element (fresh session) shows the exact same states as last set
 
 ### Phase 2: Auto-jump to first unmarked row
 
