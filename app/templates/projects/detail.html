@@ -8,11 +8,110 @@
         color: var(--muted);
     }
 
-    .project-item {
+    .element-row {
         display: flex;
-        justify-content: space-between;
-        align-items: baseline;
+        align-items: center;
         gap: 12px;
+    }
+
+    .element-link {
+        flex: 1;
+    }
+
+    .element-count {
+        flex-shrink: 0;
+    }
+
+    .state-breakdown {
+        display: inline-flex;
+        gap: 8px;
+        margin-left: 8px;
+        font-size: 0.85rem;
+    }
+
+    .state-chip--done {
+        color: #16a34a;
+    }
+
+    .state-chip--in_progress {
+        color: #b45309;
+    }
+
+    .state-chip--not_started {
+        color: #9e9e9e;
+    }
+
+    /* Always visible on touch devices — there's no hover to reveal them, so
+       hiding by default would make them unreachable. */
+    .element-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    /* Beats the plain .element-actions rule above regardless of source order,
+       so renaming still hides them on touch devices too. */
+    .element-actions.is-hidden {
+        display: none;
+    }
+
+    /* Hover has no touch equivalent — gate the hide-until-hover behavior (and the
+       "X rows" shift-left-on-hover effect it produces) to mouse/trackpad input. */
+    @media (hover: hover) and (pointer: fine) {
+        .element-actions {
+            display: none;
+        }
+
+        .element-row:hover .element-actions,
+        .element-row:focus-within .element-actions {
+            display: flex;
+        }
+
+        /* Higher specificity than the hover rule above, so the icons stay hidden
+           while renaming even though the cursor is still over the row. */
+        .element-row:hover .element-actions.is-hidden,
+        .element-row:focus-within .element-actions.is-hidden {
+            display: none;
+        }
+    }
+
+    .icon-button {
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        padding: 4px;
+        color: var(--muted);
+    }
+
+    .icon-button:hover {
+        color: var(--accent-strong);
+    }
+
+    .delete-form {
+        display: inline-flex;
+        margin: 0;
+        max-width: none;
+    }
+
+    .element-rename-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        max-width: 480px;
+        margin: 0;
+    }
+
+    .element-rename-form input {
+        flex: 1;
+        margin: 0;
+    }
+
+    .is-hidden {
+        display: none;
     }
 </style>
 
@@ -26,10 +125,49 @@
 
     {% if elements_with_counts %}
     <ul class="project-list">
-        {% for element, row_count in elements_with_counts %}
+        {% for element, row_count, done_count, in_progress_count, not_started_count in elements_with_counts %}
         <li class="project-item">
-            <a href="/projects/{{ project.id }}/elements/{{ element.id }}">{{ element.name or "Unnamed element" }}</a>
-            <span class="subtle">{% if row_count > 0 %}{{ row_count }} row{{ "s" if row_count != 1 else "" }}{% else %}No pattern yet{% endif %}</span>
+            <div class="element-row">
+                <a href="/projects/{{ project.id }}/elements/{{ element.id }}"
+                    class="element-link {{ 'is-hidden' if rename_error_element_id == element.id else '' }}">
+                    {{ element.name or "Unnamed element" }}
+                </a>
+
+                <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/rename"
+                    class="element-rename-form {{ '' if rename_error_element_id == element.id else 'is-hidden' }}">
+                    <input type="hidden" name="return_to" value="list">
+                    <input type="text" name="name" value="{{ element.name or '' }}" maxlength="50"
+                        placeholder="Element name" required>
+                    <button type="submit">Save name</button>
+                    <button type="button" class="btn btn-outline element-rename-cancel">Cancel</button>
+                </form>
+
+                <span class="subtle element-count {{ 'is-hidden' if rename_error_element_id == element.id else '' }}">
+                    {% if row_count > 0 %}
+                    {{ row_count }} row{{ "s" if row_count != 1 else "" }}
+                    <span class="state-breakdown">
+                        <span class="state-chip state-chip--done">● {{ done_count }}</span>
+                        <span class="state-chip state-chip--in_progress">◐ {{ in_progress_count }}</span>
+                        <span class="state-chip state-chip--not_started">○ {{ not_started_count }}</span>
+                    </span>
+                    {% else %}
+                    No pattern yet
+                    {% endif %}
+                </span>
+
+                <div class="element-actions {{ 'is-hidden' if rename_error_element_id == element.id else '' }}">
+                    <button type="button" class="icon-button element-rename-toggle" aria-label="Rename element"
+                        aria-expanded="{{ 'true' if rename_error_element_id == element.id else 'false' }}">✏️</button>
+                    <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/delete"
+                        class="delete-form element-delete-form"
+                        data-element-name="{{ element.name or 'Unnamed element' }}">
+                        <button type="submit" class="icon-button" aria-label="Delete element">🗑️</button>
+                    </form>
+                </div>
+            </div>
+            {% if rename_error_element_id == element.id %}
+            <p style="color: #a44f62; font-weight: 600">{{ rename_error }}</p>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>
@@ -37,4 +175,56 @@
     <p class="subtle">No elements yet — <a href="/projects/{{ project.id }}/elements/new">add one</a>.</p>
     {% endif %}
 </section>
+
+<script>
+    (function () {
+        var list = document.querySelector(".project-list");
+        if (!list) return;
+
+        function openItem(item) {
+            item.querySelector(".element-link").classList.add("is-hidden");
+            item.querySelector(".element-rename-form").classList.remove("is-hidden");
+            item.querySelector(".element-count").classList.add("is-hidden");
+            item.querySelector(".element-actions").classList.add("is-hidden");
+            var toggle = item.querySelector(".element-rename-toggle");
+            toggle.setAttribute("aria-expanded", "true");
+            var input = item.querySelector(".element-rename-form input[name='name']");
+            if (input) input.focus();
+        }
+
+        function closeItem(item) {
+            item.querySelector(".element-link").classList.remove("is-hidden");
+            item.querySelector(".element-rename-form").classList.add("is-hidden");
+            item.querySelector(".element-count").classList.remove("is-hidden");
+            item.querySelector(".element-actions").classList.remove("is-hidden");
+            item.querySelector(".element-rename-toggle").setAttribute("aria-expanded", "false");
+        }
+
+        list.addEventListener("click", function (e) {
+            var item = e.target.closest(".project-item");
+            if (!item) return;
+
+            if (e.target.closest(".element-rename-toggle")) {
+                var toggle = item.querySelector(".element-rename-toggle");
+                var isOpen = toggle.getAttribute("aria-expanded") === "true";
+                isOpen ? closeItem(item) : openItem(item);
+            } else if (e.target.closest(".element-rename-cancel")) {
+                closeItem(item);
+            }
+        });
+
+        // Reads the element name from a data-attribute rather than inlining it into
+        // an onsubmit string — a name containing an apostrophe would otherwise break
+        // out of the JS string and silently skip the confirmation entirely.
+        list.addEventListener("submit", function (e) {
+            var form = e.target.closest(".element-delete-form");
+            if (!form) return;
+            var name = form.dataset.elementName || "this element";
+            var ok = confirm(
+                "Delete \"" + name + "\"? This cannot be undone — all rows and progress will be lost."
+            );
+            if (!ok) e.preventDefault();
+        });
+    })();
+</script>
 {% endblock %}

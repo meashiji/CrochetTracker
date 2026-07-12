@@ -152,6 +152,33 @@ async def _build_row_states(
     return {row_state.row_id: row_state.state for row_state in row_states}
 
 
+async def _render_project_list(
+    request: Request,
+    user: User,
+    session: AsyncSession,
+    **extra_context,
+):
+    """Fetch the user's projects and render the project list page.
+
+    Shared by the GET route and the rename route's validation-error re-render.
+    """
+    result = await session.execute(
+        select(Project)
+        .where(Project.user_id == user.id)
+        .order_by(Project.updated_at.desc())
+        .limit(500)
+    )
+    projects = result.scalars().all()
+    context = {
+        "user": user,
+        "projects": projects,
+        "rename_error": None,
+        "rename_error_project_id": None,
+    }
+    context.update(extra_context)
+    return templates.TemplateResponse(request, "projects/list.html", context)
+
+
 @router.get("/")
 async def project_list(
     request: Request,
@@ -168,16 +195,67 @@ async def project_list(
     Returns:
         _type_: A list of projects for the current user.
     """
-    result = await session.execute(
-        select(Project)
-        .where(Project.user_id == user.id)
-        .order_by(Project.updated_at.desc())
-        .limit(500)
+    return await _render_project_list(request, user, session)
+
+
+@router.post("/{project_id}/rename")
+async def project_rename(
+    request: Request,
+    project_id: int,
+    name: str = Form(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project = await _get_project(project_id, user, session)
+    name = name.strip()
+    if not name:
+        return await _render_project_list(
+            request, user, session,
+            rename_error="Project name is required.", rename_error_project_id=project.id,
+        )
+    if len(name) > 50:
+        return await _render_project_list(
+            request, user, session,
+            rename_error="Project name must be 50 characters or fewer.",
+            rename_error_project_id=project.id,
+        )
+
+    project.name = name
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+
+    # Commit before redirect so the follow-up GET sees the new name.
+    await session.commit()
+
+    return RedirectResponse(url="/projects/", status_code=303)
+
+
+@router.post("/{project_id}/delete")
+async def project_delete(
+    project_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project = await _get_project(project_id, user, session)
+
+    # Delete in FK-safe order: RowStates -> Rows + ElementRepetitions -> Elements -> Project.
+    element_ids_sub = select(Element.id).where(Element.project_id == project.id)
+    rep_ids_sub = select(ElementRepetition.id).where(
+        ElementRepetition.element_id.in_(element_ids_sub)
     )
-    projects = result.scalars().all()
-    return templates.TemplateResponse(
-        request, "projects/list.html", {"user": user, "projects": projects}
+    await session.execute(
+        delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub))
     )
+    await session.execute(delete(Row).where(Row.element_id.in_(element_ids_sub)))
+    await session.execute(
+        delete(ElementRepetition).where(ElementRepetition.element_id.in_(element_ids_sub))
+    )
+    await session.execute(delete(Element).where(Element.project_id == project.id))
+    await session.execute(delete(Project).where(Project.id == project.id))
+
+    await session.commit()
+
+    return RedirectResponse(url="/projects/", status_code=303)
 
 
 @router.get("/new")
@@ -234,6 +312,63 @@ async def project_create(
     return RedirectResponse(url=f"/projects/{project.id}", status_code=303)
 
 
+async def _render_project_detail(
+    request: Request,
+    user: User,
+    project: Project,
+    session: AsyncSession,
+    **extra_context,
+):
+    """Fetch a project's elements + row counts and render the project detail page.
+
+    Shared by the GET route and the elements-list rename route's error re-render.
+    """
+    result = await session.execute(
+        select(Element)
+        .where(Element.project_id == project.id)
+        .order_by(Element.created_at.asc())
+    )
+    elements = result.scalars().all()
+    element_ids = [element.id for element in elements]
+
+    row_counts = await session.execute(
+        select(Row.element_id, func.count(Row.id))
+        .where(Row.element_id.in_(element_ids))
+        .group_by(Row.element_id)
+    )
+    counts_by_element = dict(row_counts.all())
+
+    state_counts = await session.execute(
+        select(ElementRepetition.element_id, RowState.state, func.count(RowState.id))
+        .join(ElementRepetition, RowState.element_repetition_id == ElementRepetition.id)
+        .where(ElementRepetition.element_id.in_(element_ids))
+        .group_by(ElementRepetition.element_id, RowState.state)
+    )
+    state_counts_by_element: dict[int, dict[RowStateEnum, int]] = {}
+    for element_id, state, count in state_counts.all():
+        state_counts_by_element.setdefault(element_id, {})[state] = count
+
+    elements_with_counts = []
+    for element in elements:
+        states = state_counts_by_element.get(element.id, {})
+        elements_with_counts.append((
+            element,
+            counts_by_element.get(element.id, 0),
+            states.get(RowStateEnum.done, 0),
+            states.get(RowStateEnum.in_progress, 0),
+            states.get(RowStateEnum.not_started, 0),
+        ))
+    context = {
+        "user": user,
+        "project": project,
+        "elements_with_counts": elements_with_counts,
+        "rename_error": None,
+        "rename_error_element_id": None,
+    }
+    context.update(extra_context)
+    return templates.TemplateResponse(request, "projects/detail.html", context)
+
+
 @router.get("/{project_id}")
 async def project_detail(
     request: Request,
@@ -242,30 +377,7 @@ async def project_detail(
     session: AsyncSession = Depends(get_session),
 ):
     project = await _get_project(project_id, user, session)
-    result = await session.execute(
-        select(Element)
-        .where(Element.project_id == project.id)
-        .order_by(Element.created_at.asc())
-    )
-    elements = result.scalars().all()
-    row_counts = await session.execute(
-        select(Row.element_id, func.count(Row.id))
-        .where(Row.element_id.in_([element.id for element in elements]))
-        .group_by(Row.element_id)
-    )
-    counts_by_element = dict(row_counts.all())
-    elements_with_counts = [
-        (element, counts_by_element.get(element.id, 0)) for element in elements
-    ]
-    return templates.TemplateResponse(
-        request,
-        "projects/detail.html",
-        {
-            "user": user,
-            "project": project,
-            "elements_with_counts": elements_with_counts,
-        },
-    )
+    return await _render_project_detail(request, user, project, session)
 
 
 @router.get("/{project_id}/elements/new")
@@ -372,22 +484,33 @@ async def element_rename(
     project_id: int,
     element_id: int,
     name: str = Form(...),
+    return_to: str = Form(default="detail"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    """Rename an element. `return_to` distinguishes the two places this form can be
+    submitted from: the element's own detail page ("detail", the default) or the
+    project's elements list ("list") — each stays on its own page afterward.
+    """
     project, element = await _get_project_and_element(
         project_id, element_id, user, session
     )
     name = name.strip()
+    error = None
     if not name:
+        error = "Element name is required."
+    elif len(name) > 50:
+        error = "Element name must be 50 characters or fewer."
+
+    if error:
+        if return_to == "list":
+            return await _render_project_detail(
+                request, user, project, session,
+                rename_error=error, rename_error_element_id=element.id,
+            )
         return await _render_element_detail(
             request, user, project, element, session,
-            rename_error="Element name is required.", rename_open=True,
-        )
-    if len(name) > 50:
-        return await _render_element_detail(
-            request, user, project, element, session,
-            rename_error="Element name must be 50 characters or fewer.", rename_open=True,
+            rename_error=error, rename_open=True,
         )
 
     element.name = name
@@ -398,9 +521,43 @@ async def element_rename(
     # Commit before redirect so the follow-up GET sees the new name.
     await session.commit()
 
+    if return_to == "list":
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
     return RedirectResponse(
         url=f"/projects/{project_id}/elements/{element_id}", status_code=303
     )
+
+
+@router.post("/{project_id}/elements/{element_id}/delete")
+async def element_delete(
+    project_id: int,
+    element_id: int,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project, element = await _get_project_and_element(
+        project_id, element_id, user, session
+    )
+
+    # Delete in FK-safe order: RowStates -> Rows + ElementRepetitions -> Element.
+    rep_ids_sub = select(ElementRepetition.id).where(
+        ElementRepetition.element_id == element.id
+    )
+    await session.execute(
+        delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub))
+    )
+    await session.execute(delete(Row).where(Row.element_id == element.id))
+    await session.execute(
+        delete(ElementRepetition).where(ElementRepetition.element_id == element.id)
+    )
+    await session.execute(delete(Element).where(Element.id == element.id))
+
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+
+    await session.commit()
+
+    return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
 
 
 @router.post("/{project_id}/elements/{element_id}")

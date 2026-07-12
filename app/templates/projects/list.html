@@ -1,6 +1,76 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .project-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .project-link {
+        flex: 1;
+    }
+
+    .project-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Hover has no touch equivalent — icons stay always-visible on touch devices
+       (base rule above) and only fade in on hover for mouse/trackpad input. */
+    @media (hover: hover) and (pointer: fine) {
+        .project-actions {
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        .project-row:hover .project-actions,
+        .project-row:focus-within .project-actions {
+            opacity: 1;
+        }
+    }
+
+    .icon-button {
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        line-height: 1;
+        padding: 4px;
+        color: var(--muted);
+    }
+
+    .icon-button:hover {
+        color: var(--accent-strong);
+    }
+
+    .delete-form {
+        display: inline-flex;
+        margin: 0;
+        max-width: none;
+    }
+
+    .project-rename-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        max-width: 480px;
+        margin: 0;
+    }
+
+    .project-rename-form input {
+        flex: 1;
+        margin: 0;
+    }
+
+    .is-hidden {
+        display: none;
+    }
+</style>
+
 <section class="panel">
     <p class="eyebrow">Project board</p>
     <h1>My Projects</h1>
@@ -13,7 +83,30 @@
     <ul class="project-list">
         {% for project in projects %}
         <li class="project-item">
-            <a href="/projects/{{ project.id }}">{{ project.name }}</a>
+            <div class="project-row">
+                <a href="/projects/{{ project.id }}"
+                    class="project-link {{ 'is-hidden' if rename_error_project_id == project.id else '' }}">{{ project.name }}</a>
+
+                <form method="post" action="/projects/{{ project.id }}/rename"
+                    class="project-rename-form {{ '' if rename_error_project_id == project.id else 'is-hidden' }}">
+                    <input type="text" name="name" value="{{ project.name }}" maxlength="50"
+                        placeholder="Project name" required>
+                    <button type="submit">Save name</button>
+                    <button type="button" class="btn btn-outline project-rename-cancel">Cancel</button>
+                </form>
+
+                <div class="project-actions {{ 'is-hidden' if rename_error_project_id == project.id else '' }}">
+                    <button type="button" class="icon-button project-rename-toggle" aria-label="Rename project"
+                        aria-expanded="{{ 'true' if rename_error_project_id == project.id else 'false' }}">✏️</button>
+                    <form method="post" action="/projects/{{ project.id }}/delete"
+                        class="delete-form project-delete-form" data-project-name="{{ project.name }}">
+                        <button type="submit" class="icon-button" aria-label="Delete project">🗑️</button>
+                    </form>
+                </div>
+            </div>
+            {% if rename_error_project_id == project.id %}
+            <p style="color: #a44f62; font-weight: 600">{{ rename_error }}</p>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>
@@ -21,4 +114,54 @@
     <p class="subtle">No projects yet — <a href="/projects/new">create one</a>.</p>
     {% endif %}
 </section>
+
+<script>
+    (function () {
+        var list = document.querySelector(".project-list");
+        if (!list) return;
+
+        function openItem(item) {
+            item.querySelector(".project-link").classList.add("is-hidden");
+            item.querySelector(".project-rename-form").classList.remove("is-hidden");
+            item.querySelector(".project-actions").classList.add("is-hidden");
+            var toggle = item.querySelector(".project-rename-toggle");
+            toggle.setAttribute("aria-expanded", "true");
+            var input = item.querySelector(".project-rename-form input[name='name']");
+            if (input) input.focus();
+        }
+
+        function closeItem(item) {
+            item.querySelector(".project-link").classList.remove("is-hidden");
+            item.querySelector(".project-rename-form").classList.add("is-hidden");
+            item.querySelector(".project-actions").classList.remove("is-hidden");
+            item.querySelector(".project-rename-toggle").setAttribute("aria-expanded", "false");
+        }
+
+        list.addEventListener("click", function (e) {
+            var item = e.target.closest(".project-item");
+            if (!item) return;
+
+            if (e.target.closest(".project-rename-toggle")) {
+                var toggle = item.querySelector(".project-rename-toggle");
+                var isOpen = toggle.getAttribute("aria-expanded") === "true";
+                isOpen ? closeItem(item) : openItem(item);
+            } else if (e.target.closest(".project-rename-cancel")) {
+                closeItem(item);
+            }
+        });
+
+        // Reads the project name from a data-attribute rather than inlining it into
+        // an onsubmit string — a name containing an apostrophe would otherwise break
+        // out of the JS string and silently skip the confirmation entirely.
+        list.addEventListener("submit", function (e) {
+            var form = e.target.closest(".project-delete-form");
+            if (!form) return;
+            var name = form.dataset.projectName || "this project";
+            var ok = confirm(
+                "Delete \"" + name + "\"? This cannot be undone — all elements and progress will be lost."
+            );
+            if (!ok) e.preventDefault();
+        });
+    })();
+</script>
 {% endblock %}
