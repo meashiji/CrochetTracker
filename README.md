@@ -12,11 +12,22 @@ uv sync
 # Set the database URL (replace with your local Postgres credentials)
 export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/crochet_tracker
 
+# Required for sessions and magic-link email — app/config.py raises at startup if these are unset
+export SECRET_KEY=some-local-dev-secret
+export MAIL_USERNAME=your-gmail-address@gmail.com
+export MAIL_PASSWORD=your-gmail-app-password
+export MAIL_FROM=your-gmail-address@gmail.com
+
 # Run the app
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
 App will be available at `http://localhost:8000`.
+
+Note: sign up (or request a magic link) with a real, reachable email address.
+Gmail's SMTP server accepts and relays mail to any recipient without erroring —
+including non-routable test domains like `@example.com` — so the app reports
+success even though nothing ever arrives.
 
 ### Using Fly Postgres instead of a local database
 

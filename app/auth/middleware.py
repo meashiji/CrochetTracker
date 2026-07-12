@@ -3,7 +3,7 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
 # Exact paths that don't require a session. /static/ stays as a prefix.
-_PUBLIC_PATHS = {"/health", "/auth/login", "/auth/signup", "/auth/magic-link", "/auth/magic-link/verify"}
+_PUBLIC_PATHS = {"/", "/health", "/auth/login", "/auth/signup", "/auth/magic-link", "/auth/magic-link/verify"}
 
 
 class AuthRedirectMiddleware(BaseHTTPMiddleware):

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user_optional
 from app.auth.middleware import AuthRedirectMiddleware
 from app.config import SECRET_KEY
 from app.db import get_session
@@ -45,7 +45,7 @@ def health():
 @app.get("/")
 async def index(
     request: Request,
-    user: User = Depends(get_current_user),
+    user: User | None = Depends(get_current_user_optional),
     session: AsyncSession = Depends(get_session),
 ):
     if user is None:
