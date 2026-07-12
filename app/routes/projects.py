@@ -182,6 +182,15 @@ async def project_list(
 
 @router.get("/new")
 async def project_new_form(request: Request, user: User = Depends(get_current_user)):
+    """Display the form for creating a new project.
+
+    Args:
+        request (Request): The incoming HTTP request.
+        user (User, optional): The user making the request. Defaults to Depends(get_current_user).
+
+    Returns:
+        _type_: A template response rendering the new project form.
+    """
     return templates.TemplateResponse(request, "projects/new.html", {"user": user})
 
 
@@ -192,6 +201,17 @@ async def project_create(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    """Create a new project.
+
+    Args:
+        request (Request): The incoming HTTP request.
+        name (str, optional): The name of the project. Defaults to Form(...).
+        user (User, optional): The user making the request. Defaults to Depends(get_current_user).
+        session (AsyncSession, optional): The database session. Defaults to Depends(get_session).
+
+    Returns:
+        _type_: The created project.
+    """
     name = name.strip()
     if not name:
         return templates.TemplateResponse(
@@ -302,6 +322,36 @@ async def element_create(
     )
 
 
+async def _render_element_detail(
+    request: Request,
+    user: User,
+    project: Project,
+    element: Element,
+    session: AsyncSession,
+    **extra_context,
+):
+    """Fetch an element's rows/row-states and render its detail page.
+
+    Shared by the GET route and every POST route on this page (pattern save,
+    rename) so their error re-renders stay in sync with the normal view.
+    """
+    result = await session.execute(
+        select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+    )
+    rows = result.scalars().all()
+    row_states = await _build_row_states(element.id, rows, session)
+    context = {
+        "user": user,
+        "project": project,
+        "element": element,
+        "rows": rows,
+        "row_states": row_states,
+        "has_rows": len(rows) > 0,
+    }
+    context.update(extra_context)
+    return templates.TemplateResponse(request, "projects/element_detail.html", context)
+
+
 @router.get("/{project_id}/elements/{element_id}")
 async def element_detail(
     request: Request,
@@ -313,22 +363,43 @@ async def element_detail(
     project, element = await _get_project_and_element(
         project_id, element_id, user, session
     )
-    result = await session.execute(
-        select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+    return await _render_element_detail(request, user, project, element, session)
+
+
+@router.post("/{project_id}/elements/{element_id}/rename")
+async def element_rename(
+    request: Request,
+    project_id: int,
+    element_id: int,
+    name: str = Form(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project, element = await _get_project_and_element(
+        project_id, element_id, user, session
     )
-    rows = result.scalars().all()
-    row_states = await _build_row_states(element.id, rows, session)
-    return templates.TemplateResponse(
-        request,
-        "projects/element_detail.html",
-        {
-            "user": user,
-            "project": project,
-            "element": element,
-            "rows": rows,
-            "row_states": row_states,
-            "has_rows": len(rows) > 0,
-        },
+    name = name.strip()
+    if not name:
+        return await _render_element_detail(
+            request, user, project, element, session,
+            rename_error="Element name is required.", rename_open=True,
+        )
+    if len(name) > 50:
+        return await _render_element_detail(
+            request, user, project, element, session,
+            rename_error="Element name must be 50 characters or fewer.", rename_open=True,
+        )
+
+    element.name = name
+    session.add(element)
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+
+    # Commit before redirect so the follow-up GET sees the new name.
+    await session.commit()
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}/elements/{element_id}", status_code=303
     )
 
 
@@ -346,23 +417,8 @@ async def element_save_pattern(
     )
 
     async def _rerender_with_error(error: str):
-        existing = await session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
-        )
-        rows = existing.scalars().all()
-        row_states = await _build_row_states(element.id, rows, session)
-        return templates.TemplateResponse(
-            request,
-            "projects/element_detail.html",
-            {
-                "user": user,
-                "project": project,
-                "element": element,
-                "rows": rows,
-                "row_states": row_states,
-                "has_rows": len(rows) > 0,
-                "error": error,
-            },
+        return await _render_element_detail(
+            request, user, project, element, session, error=error
         )
 
     if len(pattern_text) > MAX_PATTERN_LENGTH:
