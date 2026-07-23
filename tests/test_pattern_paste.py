@@ -28,10 +28,16 @@ async def project_and_element(test_user, db_session):
 
     yield project, element
 
-    rep_ids_sub = select(ElementRepetition.id).where(ElementRepetition.element_id == element.id)
-    await db_session.execute(delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub)))
+    rep_ids_sub = select(ElementRepetition.id).where(
+        ElementRepetition.element_id == element.id
+    )
+    await db_session.execute(
+        delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub))
+    )
     await db_session.execute(delete(Row).where(Row.element_id == element.id))
-    await db_session.execute(delete(ElementRepetition).where(ElementRepetition.element_id == element.id))
+    await db_session.execute(
+        delete(ElementRepetition).where(ElementRepetition.element_id == element.id)
+    )
     await db_session.execute(delete(Element).where(Element.id == element.id))
     await db_session.commit()
 
@@ -52,28 +58,42 @@ async def test_pattern_paste_creates_matching_db_records(
     expected = parse_pattern(pattern_text)
 
     rows = (
-        await db_session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position)
+        (
+            await db_session.execute(
+                select(Row).where(Row.element_id == element.id).order_by(Row.position)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(rows) == len(expected)
     for row, (pos, content) in zip(rows, expected):
         assert row.position == pos
         assert row.content == content
 
     reps = (
-        await db_session.execute(
-            select(ElementRepetition).where(ElementRepetition.element_id == element.id)
+        (
+            await db_session.execute(
+                select(ElementRepetition).where(
+                    ElementRepetition.element_id == element.id
+                )
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(reps) == 1
     assert reps[0].repetition_number == 1
 
     states = (
-        await db_session.execute(
-            select(RowState).where(RowState.element_repetition_id == reps[0].id)
+        (
+            await db_session.execute(
+                select(RowState).where(RowState.element_repetition_id == reps[0].id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(states) == len(rows)
     assert all(s.state == RowStateEnum.not_started for s in states)
 
@@ -108,8 +128,10 @@ async def test_pattern_repaste_replaces_rows(
     assert first_response.status_code == 303
 
     original_rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     original_ids = {row.id for row in original_rows}
     assert len(original_ids) == 3
 
@@ -121,10 +143,14 @@ async def test_pattern_repaste_replaces_rows(
     assert second_response.status_code == 303
 
     new_rows = (
-        await db_session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position)
+        (
+            await db_session.execute(
+                select(Row).where(Row.element_id == element.id).order_by(Row.position)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     new_ids = {row.id for row in new_rows}
 
     assert len(new_rows) == 2
@@ -132,17 +158,27 @@ async def test_pattern_repaste_replaces_rows(
     assert new_ids.isdisjoint(original_ids)
 
     reps = (
-        await db_session.execute(
-            select(ElementRepetition).where(ElementRepetition.element_id == element.id)
+        (
+            await db_session.execute(
+                select(ElementRepetition).where(
+                    ElementRepetition.element_id == element.id
+                )
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(reps) == 1
 
     states = (
-        await db_session.execute(
-            select(RowState).where(RowState.element_repetition_id == reps[0].id)
+        (
+            await db_session.execute(
+                select(RowState).where(RowState.element_repetition_id == reps[0].id)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     assert len(states) == len(new_rows)
 
 
@@ -160,8 +196,10 @@ async def test_pattern_paste_blank_result_writes_nothing(
     assert "Pattern text produced no rows" in response.text
 
     rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     assert rows == []
 
 
@@ -180,8 +218,10 @@ async def test_pattern_paste_oversized_writes_nothing(
     assert "Pattern too large" in response.text
 
     rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     assert rows == []
 
 
@@ -198,10 +238,14 @@ async def test_pattern_paste_rejected_repaste_leaves_existing_rows_intact(
     assert first_response.status_code == 303
 
     original_rows = (
-        await db_session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position)
+        (
+            await db_session.execute(
+                select(Row).where(Row.element_id == element.id).order_by(Row.position)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     original = [(row.id, row.position, row.content) for row in original_rows]
     assert len(original) == 2
 
@@ -214,10 +258,14 @@ async def test_pattern_paste_rejected_repaste_leaves_existing_rows_intact(
     assert "Pattern text produced no rows" in rejected_response.text
 
     rows_after = (
-        await db_session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position)
+        (
+            await db_session.execute(
+                select(Row).where(Row.element_id == element.id).order_by(Row.position)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     after = [(row.id, row.position, row.content) for row in rows_after]
     assert after == original
 
@@ -236,6 +284,8 @@ async def test_pattern_paste_other_user_sees_404_and_writes_nothing(
     assert response.status_code == 404
 
     rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     assert rows == []

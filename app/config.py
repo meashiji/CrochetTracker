@@ -11,8 +11,12 @@ elif _raw.startswith("postgresql://"):
 # asyncpg's SQLAlchemy dialect doesn't accept the libpq "sslmode" kwarg,
 # but it does accept "ssl" with the same string values (e.g. "disable").
 _parts = urlsplit(_raw)
-_query = urlencode([("ssl" if k == "sslmode" else k, v) for k, v in parse_qsl(_parts.query)])
-DATABASE_URL = urlunsplit((_parts.scheme, _parts.netloc, _parts.path, _query, _parts.fragment))
+_query = urlencode(
+    [("ssl" if k == "sslmode" else k, v) for k, v in parse_qsl(_parts.query)]
+)
+DATABASE_URL = urlunsplit(
+    (_parts.scheme, _parts.netloc, _parts.path, _query, _parts.fragment)
+)
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 

@@ -27,7 +27,9 @@ async def test_rename_updates_name_and_redirects(test_user, async_client, db_ses
     await db_session.commit()
 
 
-async def test_rename_blank_name_shows_error_and_keeps_old_name(test_user, async_client, db_session):
+async def test_rename_blank_name_shows_error_and_keeps_old_name(
+    test_user, async_client, db_session
+):
     project = Project(user_id=test_user.id, name="Sunset shawl")
     db_session.add(project)
     await db_session.commit()
@@ -88,7 +90,9 @@ async def test_rename_other_user_sees_404_and_does_not_change_name(
     await db_session.commit()
 
 
-async def test_delete_removes_project_and_redirects(test_user, async_client, db_session):
+async def test_delete_removes_project_and_redirects(
+    test_user, async_client, db_session
+):
     project = Project(user_id=test_user.id, name="Sunset shawl")
     db_session.add(project)
     await db_session.commit()
@@ -107,7 +111,9 @@ async def test_delete_removes_project_and_redirects(test_user, async_client, db_
     assert remaining is None
 
 
-async def test_delete_removes_elements_rows_and_row_states(test_user, async_client, db_session):
+async def test_delete_removes_elements_rows_and_row_states(
+    test_user, async_client, db_session
+):
     project = Project(user_id=test_user.id, name="Sunset shawl")
     db_session.add(project)
     await db_session.commit()
@@ -130,31 +136,51 @@ async def test_delete_removes_elements_rows_and_row_states(test_user, async_clie
     assert response.status_code == 303
 
     remaining_elements = (
-        await db_session.execute(select(Element).where(Element.project_id == project.id))
-    ).scalars().all()
+        (
+            await db_session.execute(
+                select(Element).where(Element.project_id == project.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
     assert remaining_elements == []
 
     remaining_rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     assert remaining_rows == []
 
     remaining_reps = (
-        await db_session.execute(
-            select(ElementRepetition).where(ElementRepetition.element_id == element.id)
-        )
-    ).scalars().all()
-    assert remaining_reps == []
-
-    remaining_states = (
-        await db_session.execute(
-            select(RowState).where(
-                RowState.element_repetition_id.in_(
-                    select(ElementRepetition.id).where(ElementRepetition.element_id == element.id)
+        (
+            await db_session.execute(
+                select(ElementRepetition).where(
+                    ElementRepetition.element_id == element.id
                 )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
+    assert remaining_reps == []
+
+    remaining_states = (
+        (
+            await db_session.execute(
+                select(RowState).where(
+                    RowState.element_repetition_id.in_(
+                        select(ElementRepetition.id).where(
+                            ElementRepetition.element_id == element.id
+                        )
+                    )
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
     assert remaining_states == []
 
 

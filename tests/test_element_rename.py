@@ -19,9 +19,13 @@ async def test_rename_updates_name_and_redirects(test_user, async_client, db_ses
     )
 
     assert response.status_code == 303
-    assert response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+    assert (
+        response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+    )
 
-    follow_up = await async_client.get(response.headers["location"], follow_redirects=False)
+    follow_up = await async_client.get(
+        response.headers["location"], follow_redirects=False
+    )
     assert follow_up.status_code == 200
     assert "Sleeve" in follow_up.text
 
@@ -29,7 +33,9 @@ async def test_rename_updates_name_and_redirects(test_user, async_client, db_ses
     await db_session.commit()
 
 
-async def test_rename_blank_name_shows_error_and_keeps_old_name(test_user, async_client, db_session):
+async def test_rename_blank_name_shows_error_and_keeps_old_name(
+    test_user, async_client, db_session
+):
     project = Project(user_id=test_user.id, name="Sunset shawl")
     db_session.add(project)
     await db_session.commit()

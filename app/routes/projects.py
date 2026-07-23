@@ -210,12 +210,17 @@ async def project_rename(
     name = name.strip()
     if not name:
         return await _render_project_list(
-            request, user, session,
-            rename_error="Project name is required.", rename_error_project_id=project.id,
+            request,
+            user,
+            session,
+            rename_error="Project name is required.",
+            rename_error_project_id=project.id,
         )
     if len(name) > 50:
         return await _render_project_list(
-            request, user, session,
+            request,
+            user,
+            session,
             rename_error="Project name must be 50 characters or fewer.",
             rename_error_project_id=project.id,
         )
@@ -248,7 +253,9 @@ async def project_delete(
     )
     await session.execute(delete(Row).where(Row.element_id.in_(element_ids_sub)))
     await session.execute(
-        delete(ElementRepetition).where(ElementRepetition.element_id.in_(element_ids_sub))
+        delete(ElementRepetition).where(
+            ElementRepetition.element_id.in_(element_ids_sub)
+        )
     )
     await session.execute(delete(Element).where(Element.project_id == project.id))
     await session.execute(delete(Project).where(Project.id == project.id))
@@ -351,13 +358,15 @@ async def _render_project_detail(
     elements_with_counts = []
     for element in elements:
         states = state_counts_by_element.get(element.id, {})
-        elements_with_counts.append((
-            element,
-            counts_by_element.get(element.id, 0),
-            states.get(RowStateEnum.done, 0),
-            states.get(RowStateEnum.in_progress, 0),
-            states.get(RowStateEnum.not_started, 0),
-        ))
+        elements_with_counts.append(
+            (
+                element,
+                counts_by_element.get(element.id, 0),
+                states.get(RowStateEnum.done, 0),
+                states.get(RowStateEnum.in_progress, 0),
+                states.get(RowStateEnum.not_started, 0),
+            )
+        )
     context = {
         "user": user,
         "project": project,
@@ -505,12 +514,21 @@ async def element_rename(
     if error:
         if return_to == "list":
             return await _render_project_detail(
-                request, user, project, session,
-                rename_error=error, rename_error_element_id=element.id,
+                request,
+                user,
+                project,
+                session,
+                rename_error=error,
+                rename_error_element_id=element.id,
             )
         return await _render_element_detail(
-            request, user, project, element, session,
-            rename_error=error, rename_open=True,
+            request,
+            user,
+            project,
+            element,
+            session,
+            rename_error=error,
+            rename_open=True,
         )
 
     element.name = name

@@ -1,5 +1,4 @@
-import pytest
-from sqlalchemy import delete, select
+from sqlalchemy import delete
 
 from app.models.project import Project
 from app.models.user import User

@@ -30,17 +30,29 @@ async def project_element_rows(test_user, async_client, db_session):
     assert response.status_code == 303
 
     rows = (
-        await db_session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+        (
+            await db_session.execute(
+                select(Row)
+                .where(Row.element_id == element.id)
+                .order_by(Row.position.asc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     yield project, element, rows
 
-    rep_ids_sub = select(ElementRepetition.id).where(ElementRepetition.element_id == element.id)
-    await db_session.execute(delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub)))
+    rep_ids_sub = select(ElementRepetition.id).where(
+        ElementRepetition.element_id == element.id
+    )
+    await db_session.execute(
+        delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub))
+    )
     await db_session.execute(delete(Row).where(Row.element_id == element.id))
-    await db_session.execute(delete(ElementRepetition).where(ElementRepetition.element_id == element.id))
+    await db_session.execute(
+        delete(ElementRepetition).where(ElementRepetition.element_id == element.id)
+    )
     await db_session.execute(delete(Element).where(Element.id == element.id))
     await db_session.commit()
 
@@ -51,7 +63,9 @@ async def _row_state(db_session, row_id):
     # populate_existing to this query (rather than session-wide expire_all) avoids
     # expiring unrelated objects (e.g. test_user's `user`) still needed by teardown.
     result = await db_session.execute(
-        select(RowState).where(RowState.row_id == row_id).execution_options(populate_existing=True)
+        select(RowState)
+        .where(RowState.row_id == row_id)
+        .execution_options(populate_existing=True)
     )
     return result.scalar_one()
 
@@ -68,7 +82,9 @@ async def test_toggle_cycles_not_started_to_in_progress(
     )
 
     assert response.status_code == 303
-    assert response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+    assert (
+        response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+    )
 
     row_state = await _row_state(db_session, row.id)
     assert row_state.state == RowStateEnum.in_progress

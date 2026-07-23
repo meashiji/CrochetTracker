@@ -91,8 +91,12 @@ async def logout(request: Request):
 
 
 @router.get("/change-password")
-async def change_password_form(request: Request, user: User = Depends(get_current_user)):
-    return templates.TemplateResponse(request, "auth/change_password.html", {"user": user})
+async def change_password_form(
+    request: Request, user: User = Depends(get_current_user)
+):
+    return templates.TemplateResponse(
+        request, "auth/change_password.html", {"user": user}
+    )
 
 
 @router.post("/change-password")
@@ -150,7 +154,10 @@ async def magic_link_request(
         session.add(token_row)
         await session.commit()
 
-        verify_url = str(request.base_url).rstrip("/") + f"/auth/magic-link/verify?token={serialized}"
+        verify_url = (
+            str(request.base_url).rstrip("/")
+            + f"/auth/magic-link/verify?token={serialized}"
+        )
         try:
             await send_magic_link_email(email, verify_url)
         except Exception:

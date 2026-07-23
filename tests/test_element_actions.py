@@ -5,7 +5,9 @@ from app.models.progress import RowState
 from app.models.project import Element, ElementRepetition, Project
 
 
-async def test_rename_from_list_redirects_to_project_detail(test_user, async_client, db_session):
+async def test_rename_from_list_redirects_to_project_detail(
+    test_user, async_client, db_session
+):
     project = Project(user_id=test_user.id, name="Sunset shawl")
     db_session.add(project)
     await db_session.commit()
@@ -23,7 +25,9 @@ async def test_rename_from_list_redirects_to_project_detail(test_user, async_cli
     assert response.status_code == 303
     assert response.headers["location"] == f"/projects/{project.id}"
 
-    follow_up = await async_client.get(response.headers["location"], follow_redirects=False)
+    follow_up = await async_client.get(
+        response.headers["location"], follow_redirects=False
+    )
     assert follow_up.status_code == 200
     assert "Sleeve" in follow_up.text
 
@@ -88,26 +92,40 @@ async def test_delete_removes_element_and_redirects_to_project_detail(
     assert remaining_element is None
 
     remaining_rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     assert remaining_rows == []
 
     remaining_reps = (
-        await db_session.execute(
-            select(ElementRepetition).where(ElementRepetition.element_id == element.id)
-        )
-    ).scalars().all()
-    assert remaining_reps == []
-
-    remaining_states = (
-        await db_session.execute(
-            select(RowState).where(
-                RowState.element_repetition_id.in_(
-                    select(ElementRepetition.id).where(ElementRepetition.element_id == element.id)
+        (
+            await db_session.execute(
+                select(ElementRepetition).where(
+                    ElementRepetition.element_id == element.id
                 )
             )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
+    assert remaining_reps == []
+
+    remaining_states = (
+        (
+            await db_session.execute(
+                select(RowState).where(
+                    RowState.element_repetition_id.in_(
+                        select(ElementRepetition.id).where(
+                            ElementRepetition.element_id == element.id
+                        )
+                    )
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
     assert remaining_states == []
 
     await db_session.execute(delete(Project).where(Project.id == project.id))

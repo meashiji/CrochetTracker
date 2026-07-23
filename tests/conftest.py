@@ -56,6 +56,7 @@ async def _dispose_engines():
     """
     yield
     from app.db import engine as _app_engine
+
     await _app_engine.dispose()
     await _test_engine.dispose()
 
@@ -90,7 +91,9 @@ async def test_user(async_client, db_session):
     )
     assert response.status_code == 303, f"Signup failed: {response.status_code}"
 
-    result = await db_session.execute(select(User).where(User.email == "test@example.com"))
+    result = await db_session.execute(
+        select(User).where(User.email == "test@example.com")
+    )
     user = result.scalar_one()
     yield user
 
@@ -123,7 +126,9 @@ async def second_user(db_session):
         )
         assert response.status_code == 303, f"Signup failed: {response.status_code}"
 
-        result = await db_session.execute(select(User).where(User.email == "second@example.com"))
+        result = await db_session.execute(
+            select(User).where(User.email == "second@example.com")
+        )
         user = result.scalar_one()
 
         yield user, client

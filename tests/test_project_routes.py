@@ -41,7 +41,9 @@ async def test_project_detail_shows_row_count(test_user, async_client, db_sessio
     await db_session.commit()
 
 
-async def test_project_detail_shows_row_state_breakdown(test_user, async_client, db_session):
+async def test_project_detail_shows_row_state_breakdown(
+    test_user, async_client, db_session
+):
     project = Project(user_id=test_user.id, name="Sunset shawl")
     db_session.add(project)
     await db_session.commit()
@@ -58,10 +60,16 @@ async def test_project_detail_shows_row_state_breakdown(test_user, async_client,
     assert save_response.status_code == 303
 
     rows = (
-        await db_session.execute(
-            select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+        (
+            await db_session.execute(
+                select(Row)
+                .where(Row.element_id == element.id)
+                .order_by(Row.position.asc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     # Row 1 -> done (two toggles), Row 2 -> in_progress (one toggle), Row 3 stays not_started.
     for _ in range(2):
@@ -82,10 +90,16 @@ async def test_project_detail_shows_row_state_breakdown(test_user, async_client,
     assert "◐ 1" in response.text
     assert "○ 1" in response.text
 
-    rep_ids_sub = select(ElementRepetition.id).where(ElementRepetition.element_id == element.id)
-    await db_session.execute(delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub)))
+    rep_ids_sub = select(ElementRepetition.id).where(
+        ElementRepetition.element_id == element.id
+    )
+    await db_session.execute(
+        delete(RowState).where(RowState.element_repetition_id.in_(rep_ids_sub))
+    )
     await db_session.execute(delete(Row).where(Row.element_id == element.id))
-    await db_session.execute(delete(ElementRepetition).where(ElementRepetition.element_id == element.id))
+    await db_session.execute(
+        delete(ElementRepetition).where(ElementRepetition.element_id == element.id)
+    )
     await db_session.execute(delete(Element).where(Element.id == element.id))
     await db_session.commit()
 
@@ -121,11 +135,17 @@ async def test_add_element_redirects_to_its_detail(test_user, async_client, db_s
     )
 
     assert response.status_code == 303
-    result = await db_session.execute(select(Element).where(Element.project_id == project.id))
+    result = await db_session.execute(
+        select(Element).where(Element.project_id == project.id)
+    )
     element = result.scalar_one()
-    assert response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+    assert (
+        response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
+    )
 
-    follow_up = await async_client.get(response.headers["location"], follow_redirects=False)
+    follow_up = await async_client.get(
+        response.headers["location"], follow_redirects=False
+    )
     assert follow_up.status_code == 200
 
     # test_user's teardown only deletes Project rows; Element has no cascade, so
@@ -170,7 +190,9 @@ async def test_element_detail_other_user_sees_404(test_user, second_user, db_ses
     await db_session.commit()
 
 
-async def test_element_save_pattern_other_user_sees_404(test_user, second_user, db_session):
+async def test_element_save_pattern_other_user_sees_404(
+    test_user, second_user, db_session
+):
     _second_user, second_client = second_user
 
     project = Project(user_id=test_user.id, name="Sunset shawl")
@@ -190,15 +212,19 @@ async def test_element_save_pattern_other_user_sees_404(test_user, second_user, 
     assert response.status_code == 404
 
     rows = (
-        await db_session.execute(select(Row).where(Row.element_id == element.id))
-    ).scalars().all()
+        (await db_session.execute(select(Row).where(Row.element_id == element.id)))
+        .scalars()
+        .all()
+    )
     assert rows == []
 
     await db_session.execute(delete(Element).where(Element.id == element.id))
     await db_session.commit()
 
 
-async def test_element_detail_wrong_project_sees_404(test_user, async_client, db_session):
+async def test_element_detail_wrong_project_sees_404(
+    test_user, async_client, db_session
+):
     project_a = Project(user_id=test_user.id, name="Project A")
     project_b = Project(user_id=test_user.id, name="Project B")
     db_session.add(project_a)

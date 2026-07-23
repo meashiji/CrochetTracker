@@ -49,10 +49,17 @@ async def index(
     session: AsyncSession = Depends(get_session),
 ):
     if user is None:
-        return templates.TemplateResponse(request, "index.html", {"user": None, "projects": []})
+        return templates.TemplateResponse(
+            request, "index.html", {"user": None, "projects": []}
+        )
 
     result = await session.execute(
-        select(Project).where(Project.user_id == user.id).order_by(Project.updated_at.desc()).limit(500)
+        select(Project)
+        .where(Project.user_id == user.id)
+        .order_by(Project.updated_at.desc())
+        .limit(500)
     )
     projects = result.scalars().all()
-    return templates.TemplateResponse(request, "index.html", {"user": user, "projects": projects})
+    return templates.TemplateResponse(
+        request, "index.html", {"user": user, "projects": projects}
+    )

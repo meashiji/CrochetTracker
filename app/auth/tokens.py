@@ -22,5 +22,5 @@ def verify_magic_link_token(serialized: str, max_age: int = 900) -> str | None:
     try:
         data = _serializer.loads(serialized, max_age=max_age)
         return data["tok"]
-    except (BadSignature, SignatureExpired):
+    except BadSignature, SignatureExpired:
         return None
