@@ -152,6 +152,11 @@
         text-decoration: none;
     }
 
+    .row-item--current .row-toggle {
+        border-color: var(--accent-strong);
+        box-shadow: 0 0 0 2px rgba(164, 79, 98, 0.25);
+    }
+
     .element-title-row {
         display: flex;
         align-items: center;
@@ -336,4 +341,15 @@
         }
     })();
 </script>
+{% endblock %}
+
+{% block scripts %}
+{% if current_row_id %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var el = document.getElementById("row-{{ current_row_id }}");
+        if (el) el.scrollIntoView({ block: "center" });
+    });
+</script>
+{% endif %}
 {% endblock %}

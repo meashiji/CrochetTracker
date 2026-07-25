@@ -184,3 +184,60 @@ async def test_toggle_wrong_element_pairing_sees_404(
     await db_session.execute(delete(Element).where(Element.id == other_element.id))
     await db_session.execute(delete(Project).where(Project.id == other_project.id))
     await db_session.commit()
+
+
+async def test_auto_jump_first_non_done_row(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Rows 1-2 done, rows 3+ not started — row 3 is the current row."""
+    project, element, rows = project_element_rows
+    url_base = f"/projects/{project.id}/elements/{element.id}/rows"
+
+    # Mark rows 1 and 2 done (two toggles each).
+    for row in rows[:2]:
+        await async_client.post(f"{url_base}/{row.id}/state", follow_redirects=False)
+        await async_client.post(f"{url_base}/{row.id}/state", follow_redirects=False)
+
+    response = await async_client.get(f"/projects/{project.id}/elements/{element.id}")
+    assert response.status_code == 200
+    # Row 3 (the third row) should be marked as current.
+    third_row_id = str(rows[2].id)
+    assert f'id="row-{third_row_id}"' in response.text
+    assert "row-item--current" in response.text
+
+
+async def test_auto_jump_all_done_no_current(
+    test_user, async_client, db_session, project_element_rows
+):
+    """All rows done — no current row, page renders without error."""
+    project, element, rows = project_element_rows
+    url_base = f"/projects/{project.id}/elements/{element.id}/rows"
+
+    for row in rows:
+        await async_client.post(f"{url_base}/{row.id}/state", follow_redirects=False)
+        await async_client.post(f"{url_base}/{row.id}/state", follow_redirects=False)
+
+    response = await async_client.get(f"/projects/{project.id}/elements/{element.id}")
+    assert response.status_code == 200
+    # No <li> should have the row-item--current class (the CSS rule itself
+    # contains the string, so check for the class on an actual element).
+    assert '<li class="row-item row-item--current' not in response.text
+
+
+async def test_auto_jump_no_rows_no_crash(test_user, async_client, db_session):
+    """Element with no pattern pasted — page renders without error."""
+    project = Project(user_id=test_user.id, name="Empty project")
+    db_session.add(project)
+    await db_session.commit()
+
+    element = Element(project_id=project.id, name="Empty element", repeat_count=1)
+    db_session.add(element)
+    await db_session.commit()
+
+    response = await async_client.get(f"/projects/{project.id}/elements/{element.id}")
+    assert response.status_code == 200
+    assert "No pattern pasted yet" in response.text
+
+    await db_session.execute(delete(Element).where(Element.id == element.id))
+    await db_session.execute(delete(Project).where(Project.id == project.id))
+    await db_session.commit()

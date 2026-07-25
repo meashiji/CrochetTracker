@@ -1,6 +1,7 @@
 {% set state = row_states[row.id] %}
 {% set glyph = {"not_started": "○", "in_progress": "◐", "done": "●"}[state.value] %}
-<li class="row-item row-item--{{ state.value }}">
+{% set is_current = current_row_id is defined and row.id == current_row_id %}
+<li id="row-{{ row.id }}" class="row-item row-item--{{ state.value }}{{ ' row-item--current' if is_current else '' }}">
     <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/rows/{{ row.id }}/state">
         <button type="submit" class="row-toggle" aria-label="Mark row {{ row.position }} as next state">
             <span class="row-dot">{{ glyph }}</span>{{ row.content }}

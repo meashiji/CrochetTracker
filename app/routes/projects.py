@@ -152,6 +152,16 @@ async def _build_row_states(
     return {row_state.row_id: row_state.state for row_state in row_states}
 
 
+def _first_unmarked_row_id(
+    rows: list[Row], row_states: dict[int, RowStateEnum]
+) -> int | None:
+    """Return the id of the first row whose state is not ``done``, or ``None``."""
+    for row in rows:
+        if row_states.get(row.id) != RowStateEnum.done:
+            return row.id
+    return None
+
+
 async def _render_project_list(
     request: Request,
     user: User,
@@ -461,6 +471,7 @@ async def _render_element_detail(
     )
     rows = result.scalars().all()
     row_states = await _build_row_states(element.id, rows, session)
+    current_row_id = _first_unmarked_row_id(rows, row_states)
     context = {
         "user": user,
         "project": project,
@@ -468,6 +479,7 @@ async def _render_element_detail(
         "rows": rows,
         "row_states": row_states,
         "has_rows": len(rows) > 0,
+        "current_row_id": current_row_id,
     }
     context.update(extra_context)
     return templates.TemplateResponse(request, "projects/element_detail.html", context)
