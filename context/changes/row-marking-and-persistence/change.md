@@ -3,7 +3,7 @@ change_id: row-marking-and-persistence
 title: Row marking (3 states) + auto-jump + persistence — north star slice
 status: implementing
 created: 2026-07-09
-updated: 2026-07-12
+updated: 2026-07-25
 archived_at: null
 ---
 
