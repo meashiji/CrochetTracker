@@ -1,0 +1,26 @@
+{
+  "name": "crochettracker",
+  "version": "1.0.0",
+  "description": "App to organize your crochet works in progress. Track your projects, store patterns, and never lose your place in a row again.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patrycja-gurdak/CrochetTracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/patrycja-gurdak/CrochetTracker/issues"
+  },
+  "homepage": "https://github.com/patrycja-gurdak/CrochetTracker#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.62.0"
+  }
+}

@@ -211,6 +211,12 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+# Node / Playwright
+node_modules/
+playwright-report/
+test-results/
+.playwright-cli/
+
 # PyPI configuration file
 .pypirc
 
@@ -225,3 +231,6 @@ __marimo__/
 # Pencil design
 *.pen
 design/
+
+# Auth.json for Playwright
+**/auth.json
