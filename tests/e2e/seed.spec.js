@@ -1,35 +1,22 @@
-// seed.spec.ts — CrochetTracker E2E seed exemplar
+// seed.spec.js — CrochetTracker E2E seed exemplar
 //
-// Proves: full user flow across auth → project → element → pattern → row toggle
+// Proves: full user flow across project → element → pattern → row toggle
 //         survives a page reload.
 //
 // Seed patterns demonstrated:
 //   - Unique test data (timestamp suffix)
 //   - Role-based locators (getByRole, getByLabel)
 //   - Wait for state (toBeVisible), not waitForTimeout
-//   - Auth without the UI (register + login via POST)
+//   - Auth via storageState (playwright.config.ts)
 //   - Own setup → action → assertion → cleanup
 //   - One test per file
 
 import { test, expect } from '@playwright/test';
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:8000';
-
 test('row state persists after page reload', async ({ page }) => {
-  const email = `seed-${Date.now()}@test.example`;
-  const password = 'testpass123';
   const projectName = `Seed Project ${Date.now()}`;
   const elementName = 'Body';
   const pattern = 'Row 1\nRow 2\nRow 3';
-
-  // ── Setup: register + login via POST (no UI) ──
-
-  await page.request.post(`${BASE}/auth/signup`, {
-    form: { email, password },
-  });
-  await page.request.post(`${BASE}/auth/login`, {
-    form: { email, password },
-  });
 
   // ── Create project ──
 
