@@ -124,7 +124,7 @@
     </div>
 
     {% if elements_with_counts %}
-    <ul class="project-list">
+    <ul class="project-list" id="element-list">
         {% for element, row_count, done_count, in_progress_count, not_started_count in elements_with_counts %}
         <li class="project-item">
             <div class="element-row">
@@ -226,5 +226,12 @@
             if (!ok) e.preventDefault();
         });
     })();
+</script>
+
+<script>
+    window.addEventListener("pageshow", function (e) {
+        if (!e.persisted) return;
+        htmx.ajax("GET", window.location.href, {target: "#element-list", select: "#element-list"});
+    });
 </script>
 {% endblock %}
