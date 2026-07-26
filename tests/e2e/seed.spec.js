@@ -36,9 +36,9 @@ test('row state persists after page reload', async ({ page }) => {
 
   await page.getByLabel('Pattern text').fill(pattern);
   await page.getByRole('button', { name: 'Save pattern' }).click();
-  await expect(page.getByText('Row 1')).toBeVisible();
-  await expect(page.getByText('Row 2')).toBeVisible();
-  await expect(page.getByText('Row 3')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mark row 1 as next state' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mark row 2 as next state' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mark row 3 as next state' })).toBeVisible();
 
   // ── Mark first row as in-progress ──
 

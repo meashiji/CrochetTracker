@@ -28,7 +28,7 @@ test('row state persists after page reload', async ({ page }) => {
 
   await page.getByLabel('Pattern text').fill(pattern);
   await page.getByRole('button', { name: 'Save pattern' }).click();
-  await expect(page.getByText('Row 1')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mark row 1 as next state' })).toBeVisible();
 
   // ── Act: mark first row as in-progress ──
 
