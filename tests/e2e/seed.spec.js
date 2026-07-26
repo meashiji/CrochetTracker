@@ -54,6 +54,10 @@ test('row state persists after page reload', async ({ page }) => {
 
   await page.goto('/projects/');
   page.on('dialog', (dialog) => dialog.accept());
-  await page.getByRole('button', { name: 'Delete project' }).click();
+  await page
+    .getByRole('listitem')
+    .filter({ hasText: projectName })
+    .getByLabel('Delete project')
+    .click();
   await expect(page.getByText(projectName)).not.toBeVisible();
 });
