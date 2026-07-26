@@ -6,8 +6,15 @@ export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:8000',
     headless: true,
-    storageState: 'auth.json',
   },
+  projects: [
+    { name: 'setup', testMatch: /auth\.setup\.js/ },
+    {
+      name: 'chromium',
+      use: { storageState: 'tests/e2e/.auth/user.json' },
+      dependencies: ['setup'],
+    },
+  ],
   webServer: {
     command: 'uv run uvicorn app.main:app --port 8000',
     port: 8000,

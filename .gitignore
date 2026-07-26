@@ -215,6 +215,7 @@ tempCodeRunnerFile.py
 node_modules/
 playwright-report/
 test-results/
+tests/e2e/.auth/
 .playwright-cli/
 
 # PyPI configuration file
@@ -231,6 +232,3 @@ __marimo__/
 # Pencil design
 *.pen
 design/
-
-# Auth.json for Playwright
-**/auth.json
