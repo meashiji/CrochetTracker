@@ -331,8 +331,8 @@ None. `RowState`, `RowStateEnum`, and `ElementRepetition` already exist from F-0
 
 #### Automated
 
-- [ ] 3.1 Updated + new tests pass: `uv run pytest tests/test_row_state_routes.py -v`
-- [ ] 3.2 Full suite still passes: `uv run pytest`
+- [x] 3.1 Updated + new tests pass: `uv run pytest tests/test_row_state_routes.py -v`
+- [x] 3.2 Full suite still passes: `uv run pytest`
 
 #### Manual
 

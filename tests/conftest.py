@@ -84,6 +84,9 @@ async def test_user(async_client, db_session):
     from app.models.project import Project
     from app.models.user import User
 
+    await db_session.execute(delete(User).where(User.email == "test@example.com"))
+    await db_session.commit()
+
     response = await async_client.post(
         "/auth/signup",
         data={"email": "test@example.com", "password": "testpassword123"},
@@ -119,6 +122,9 @@ async def second_user(db_session):
         transport=ASGITransport(app=app),
         base_url="https://testserver",
     ) as client:
+        await db_session.execute(delete(User).where(User.email == "second@example.com"))
+        await db_session.commit()
+
         response = await client.post(
             "/auth/signup",
             data={"email": "second@example.com", "password": "testpassword123"},

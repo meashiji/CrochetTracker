@@ -81,10 +81,9 @@ async def test_toggle_cycles_not_started_to_in_progress(
         follow_redirects=False,
     )
 
-    assert response.status_code == 303
-    assert (
-        response.headers["location"] == f"/projects/{project.id}/elements/{element.id}"
-    )
+    assert response.status_code == 200
+    assert "◐" in response.text
+    assert "row-item--in_progress" in response.text
 
     row_state = await _row_state(db_session, row.id)
     assert row_state.state == RowStateEnum.in_progress

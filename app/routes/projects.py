@@ -673,6 +673,7 @@ async def element_save_pattern(
 
 @router.post("/{project_id}/elements/{element_id}/rows/{row_id}/state")
 async def row_state_toggle(
+    request: Request,
     project_id: int,
     element_id: int,
     row_id: int,
@@ -696,9 +697,18 @@ async def row_state_toggle(
     project.updated_at = datetime.now(timezone.utc)
     session.add(project)
 
-    # Commit before redirect so the follow-up GET sees the new state.
+    # Commit so the fragment reflects the new state.
     await session.commit()
 
-    return RedirectResponse(
-        url=f"/projects/{project_id}/elements/{element_id}", status_code=303
+    return templates.TemplateResponse(
+        request,
+        "projects/_row.html",
+        {
+            "project": project,
+            "element": element,
+            "row": row,
+            "row_states": {row.id: row_state.state},
+            "current_row_id": None,
+        },
+        status_code=200,
     )

@@ -2,9 +2,13 @@
 {% set glyph = {"not_started": "○", "in_progress": "◐", "done": "●"}[state.value] %}
 {% set is_current = current_row_id is defined and row.id == current_row_id %}
 <li id="row-{{ row.id }}" class="row-item row-item--{{ state.value }}{{ ' row-item--current' if is_current else '' }}">
-    <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/rows/{{ row.id }}/state">
-        <button type="submit" class="row-toggle" aria-label="Mark row {{ row.position }} as next state">
-            <span class="row-dot">{{ glyph }}</span>{{ row.content }}
-        </button>
-    </form>
+    <button type="button"
+        class="row-toggle"
+        hx-post="/projects/{{ project.id }}/elements/{{ element.id }}/rows/{{ row.id }}/state"
+        hx-target="closest li"
+        hx-swap="outerHTML"
+        hx-on::responseError="this.closest('li').classList.add('row-item--error')"
+        aria-label="Mark row {{ row.position }} as next state">
+        <span class="row-dot">{{ glyph }}</span>{{ row.content }}
+    </button>
 </li>
