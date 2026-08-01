@@ -3,7 +3,7 @@ project: CrochetTracker
 version: 1
 status: draft
 created: 2026-06-05
-updated: 2026-07-09
+updated: 2026-08-01
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -34,7 +34,7 @@ This is the moment the product hypothesis is proven: the app reliably answers "w
 | F-01 | db-schema-and-models         | (foundation) ORM models, migrations, DB connection in place       | —             | FR-001–010                            | done     |
 | F-02 | auth-scaffold                | (foundation) sign up, sign in; routes protected per-user          | F-01          | Access Control                        | done     |
 | S-01 | project-and-pattern-display  | create a project, paste a pattern, and see it as a list of rows   | F-01, F-02    | FR-001, FR-002, FR-004, FR-005, FR-008 | done     |
-| S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | ready    |
+| S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | done     |
 | S-03 | repeats-and-stitch-position  | track repeat elements independently; record stitch position        | S-02          | FR-003, FR-010                        | proposed |
 | S-04 | stitch-reference-panel       | open a reference panel showing stitch codes and descriptions       | F-02          | FR-009                                | proposed |
 | P-01 | ui-polish                    | visual design pass — typography, colors, spacing, responsive       | S-02          | —                                     | proposed |
@@ -116,7 +116,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Live-sync error UX: when a row-mark request fails (network blip, server error), what does the user see — inline toast, banner, modal? Owner: user. Block: no (PRD Open Question 1 — downstream design decision).
 - **Risk:** The 100ms NFR (row state change reflected in UI within 100ms) requires HTMX to update the DOM optimistically or the server to respond fast enough. Sequenced first among slices because it proves the core hypothesis — don't defer it for UX polish.
-- **Status:** ready — prerequisite S-01 is done; no change folder opened yet
+- **Status:** done
 
 ### S-03: Repeat element tracking + stitch position
 
@@ -188,3 +188,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 (Empty on first generation. `/10x-archive` appends here when a change matching a roadmap item is archived.)
+
+- **S-02: user can set a row to one of three states (not started / in-progress / done), toggle between them; on reopening the project, the view jumps to the first unmarked row and shows the exact previously-marked state — no manual save required.** — Archived 2026-08-01 → `context/archive/2026-07-09-row-marking-and-persistence/`. Lesson: —.
