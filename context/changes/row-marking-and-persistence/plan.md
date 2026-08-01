@@ -323,9 +323,9 @@ None. `RowState`, `RowStateEnum`, and `ElementRepetition` already exist from F-0
 
 #### Manual
 
-- [ ] 2.3 Element with rows 1-2 done, 3+ not started: opening scrolls to row 3, visually distinct
-- [ ] 2.4 Element with every row done: opens at the top, no scroll jump, no error
-- [ ] 2.5 Element with no pattern pasted yet: unaffected
+- [x] 2.3 Element with rows 1-2 done, 3+ not started: opening scrolls to row 3, visually distinct
+- [x] 2.4 Element with every row done: opens at the top, no scroll jump, no error
+- [x] 2.5 Element with no pattern pasted yet: unaffected
 
 ### Phase 3: HTMX fragment swap for the 100ms NFR
 
@@ -336,6 +336,6 @@ None. `RowState`, `RowStateEnum`, and `ElementRepetition` already exist from F-0
 
 #### Manual
 
-- [ ] 3.3 Tapping a row's control updates its state without a full-page reload, subjectively near-instant
-- [ ] 3.4 Simulated server failure shows the `row-item--error` visual treatment; DB state confirmed unchanged via fresh query
-- [ ] 3.5 Reopening the element after a Phase-3 toggle still shows correct auto-jump/highlight on next full load
+- [x] 3.3 Tapping a row's control updates its state without a full-page reload, subjectively near-instant
+- [x] 3.4 Simulated server failure shows the `row-item--error` visual treatment; DB state confirmed unchanged via fresh query
+- [x] 3.5 Reopening the element after a Phase-3 toggle still shows correct auto-jump/highlight on next full load
