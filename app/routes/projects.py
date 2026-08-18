@@ -106,36 +106,74 @@ async def _get_project_element_and_row(
     return project, element, row
 
 
-async def _get_element_repetition(
-    element_id: int, session: AsyncSession
+async def _get_element_repetition_by_number(
+    element_id: int, repetition_number: int, session: AsyncSession
 ) -> ElementRepetition:
     """
-    Fetch an element repetition by its ID.
+    Fetch an element's repetition by its 1-based repetition number.
 
     Args:
-        element_id (int): id of element to fetch repetition for
+        element_id (int): id of the element the repetition belongs to
+        repetition_number (int): 1-based repetition number within the element
         session (AsyncSession): database session
 
     Raises:
-        HTTPException: if repetition is not found
+        HTTPException: if no such repetition exists
 
     Returns:
         ElementRepetition: the element repetition object
     """
     result = await session.execute(
-        select(ElementRepetition).where(ElementRepetition.element_id == element_id)
+        select(ElementRepetition).where(
+            ElementRepetition.element_id == element_id,
+            ElementRepetition.repetition_number == repetition_number,
+        )
     )
-    return result.scalar_one()
+    repetition = result.scalar_one_or_none()
+    if repetition is None:
+        raise HTTPException(status_code=404)
+    return repetition
+
+
+def _resolve_requested_rep(request: Request, element: Element) -> tuple[int, bool]:
+    """Decide which repetition number an element-page request shows.
+
+    An explicit ``?rep=N`` query param wins — a non-integer or out-of-range value
+    is a bad URL and 404s (app convention). Otherwise the last-viewed cookie is
+    used, silently clamped into range (stale app-written state, e.g. after a
+    decrease, must not 404 the user out of their own page). Defaults to 1.
+
+    Returns:
+        tuple[int, bool]: (rep_number, is_explicit) — is_explicit is True only
+        when the rep came from the query param, which is the only case where the
+        last-viewed cookie gets (re)written.
+    """
+    rep_param = request.query_params.get("rep")
+    if rep_param is not None:
+        try:
+            rep_number = int(rep_param)
+        except ValueError:
+            raise HTTPException(status_code=404)
+        if rep_number < 1 or rep_number > element.repeat_count:
+            raise HTTPException(status_code=404)
+        return rep_number, True
+
+    cookie_value = request.cookies.get(f"last_rep_{element.id}")
+    try:
+        rep_number = int(cookie_value) if cookie_value is not None else 1
+    except ValueError:
+        rep_number = 1
+    return max(1, min(rep_number, element.repeat_count)), False
 
 
 async def _build_row_states(
-    element_id: int, rows: list[Row], session: AsyncSession
+    repetition_id: int, rows: list[Row], session: AsyncSession
 ) -> dict[int, RowStateEnum]:
     """
-    Build a dictionary mapping row IDs to their states.
+    Build a dictionary mapping row IDs to their states for one repetition.
 
     Args:
-        element_id (int): id of the element to fetch row states for
+        repetition_id (int): id of the element repetition to fetch states for
         rows (list[Row]): list of rows to fetch states for
         session (AsyncSession): database session
 
@@ -144,9 +182,8 @@ async def _build_row_states(
     """
     if not rows:
         return {}
-    repetition = await _get_element_repetition(element_id, session)
     result = await session.execute(
-        select(RowState).where(RowState.element_repetition_id == repetition.id)
+        select(RowState).where(RowState.element_repetition_id == repetition_id)
     )
     row_states = result.scalars().all()
     return {row_state.row_id: row_state.state for row_state in row_states}
@@ -470,7 +507,19 @@ async def _render_element_detail(
         select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
     )
     rows = result.scalars().all()
-    row_states = await _build_row_states(element.id, rows, session)
+
+    if rows:
+        rep_number, is_explicit = _resolve_requested_rep(request, element)
+        repetition = await _get_element_repetition_by_number(
+            element.id, rep_number, session
+        )
+        row_states = await _build_row_states(repetition.id, rows, session)
+    else:
+        # No pattern saved yet: no repetitions exist, so there is nothing to
+        # resolve or scope — show the degenerate rep 1 and never write a cookie.
+        rep_number, is_explicit = 1, False
+        row_states = {}
+
     current_row_id = _first_unmarked_row_id(rows, row_states)
     context = {
         "user": user,
@@ -480,9 +529,20 @@ async def _render_element_detail(
         "row_states": row_states,
         "has_rows": len(rows) > 0,
         "current_row_id": current_row_id,
+        "rep_number": rep_number,
+        "rep_numbers": range(1, element.repeat_count + 1),
     }
     context.update(extra_context)
-    return templates.TemplateResponse(request, "projects/element_detail.html", context)
+    response = templates.TemplateResponse(
+        request, "projects/element_detail.html", context
+    )
+    if is_explicit:
+        # Pin the rep only when the user explicitly picked one (pill click) —
+        # a bare GET must not re-pin a rep the user didn't choose this visit.
+        response.set_cookie(
+            f"last_rep_{element.id}", str(rep_number), max_age=31_536_000
+        )
+    return response
 
 
 @router.get("/{project_id}/elements/{element_id}")
@@ -671,11 +731,99 @@ async def element_save_pattern(
     )
 
 
-@router.post("/{project_id}/elements/{element_id}/rows/{row_id}/state")
+@router.post("/{project_id}/elements/{element_id}/repeat-count")
+async def element_repeat_count(
+    request: Request,
+    project_id: int,
+    element_id: int,
+    repeat_count: int = Form(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project, element = await _get_project_and_element(
+        project_id, element_id, user, session
+    )
+
+    if repeat_count < 1 or repeat_count > 99:
+        return await _render_element_detail(
+            request,
+            user,
+            project,
+            element,
+            session,
+            repeat_error="Repeat count must be between 1 and 99.",
+        )
+
+    rows_result = await session.execute(
+        select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+    )
+    rows = rows_result.scalars().all()
+    reps_result = await session.execute(
+        select(ElementRepetition).where(ElementRepetition.element_id == element.id)
+    )
+    existing_reps = reps_result.scalars().all()
+
+    # Invariant: whenever an element has rows, its ElementRepetition rows exactly
+    # match repeat_count (numbered 1..N). With no rows there are no repetitions
+    # and the stepper is a plain field update.
+    if rows:
+        if repeat_count > element.repeat_count:
+            new_reps = [
+                ElementRepetition(element_id=element.id, repetition_number=i)
+                for i in range(element.repeat_count + 1, repeat_count + 1)
+            ]
+            for rep in new_reps:
+                session.add(rep)
+            await session.flush()  # populate PKs before RowState inserts reference them
+            session.add_all(
+                RowState(
+                    element_repetition_id=rep.id,
+                    row_id=row.id,
+                    state=RowStateEnum.not_started,
+                )
+                for rep in new_reps
+                for row in rows
+            )
+        elif repeat_count < element.repeat_count:
+            removed_rep_ids = [
+                rep.id for rep in existing_reps if rep.repetition_number > repeat_count
+            ]
+            if removed_rep_ids:
+                # FK-safe order: RowStates before their ElementRepetitions.
+                await session.execute(
+                    delete(RowState).where(
+                        RowState.element_repetition_id.in_(removed_rep_ids)
+                    )
+                )
+                await session.execute(
+                    delete(ElementRepetition).where(
+                        ElementRepetition.id.in_(removed_rep_ids)
+                    )
+                )
+
+    element.repeat_count = repeat_count
+    session.add(element)
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+
+    # Commit before redirect so the follow-up GET sees the new rep structure.
+    await session.commit()
+
+    # Bare URL, no ?rep= — a stale last-rep cookie is clamped on the next read
+    # rather than 404ing the user out of their own page.
+    return RedirectResponse(
+        url=f"/projects/{project_id}/elements/{element_id}", status_code=303
+    )
+
+
+@router.post(
+    "/{project_id}/elements/{element_id}/reps/{rep_number}/rows/{row_id}/state"
+)
 async def row_state_toggle(
     request: Request,
     project_id: int,
     element_id: int,
+    rep_number: int,
     row_id: int,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -683,7 +831,9 @@ async def row_state_toggle(
     project, element, row = await _get_project_element_and_row(
         project_id, element_id, row_id, user, session
     )
-    repetition = await _get_element_repetition(element.id, session)
+    repetition = await _get_element_repetition_by_number(
+        element.id, rep_number, session
+    )
     result = await session.execute(
         select(RowState).where(
             RowState.element_repetition_id == repetition.id,
@@ -709,6 +859,7 @@ async def row_state_toggle(
             "row": row,
             "row_states": {row.id: row_state.state},
             "current_row_id": None,
+            "rep_number": rep_number,
         },
         status_code=200,
     )

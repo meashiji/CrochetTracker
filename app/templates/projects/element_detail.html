@@ -224,6 +224,71 @@
     .is-hidden {
         display: none;
     }
+
+    .repeat-stepper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    /* Out-specifies base.html's global `form` grid and `button[type="submit"]`
+       pink-pill styles — the stepper is a compact inline control. */
+    .repeat-stepper form {
+        display: block;
+        margin: 0;
+        max-width: none;
+    }
+
+    .repeat-stepper button[type="submit"] {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface-strong);
+        color: var(--accent-strong);
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .repeat-stepper button[type="submit"]:hover {
+        border-color: var(--accent-strong);
+    }
+
+    .repeat-stepper-count {
+        font-weight: 600;
+        color: var(--muted);
+    }
+
+    .rep-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .rep-pill {
+        padding: 4px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface-strong);
+        color: var(--text);
+        font-size: 0.88rem;
+        font-weight: 600;
+    }
+
+    .rep-pill:hover {
+        text-decoration: none;
+        border-color: var(--accent-strong);
+    }
+
+    .rep-pill--active {
+        background: var(--accent-strong);
+        border-color: var(--accent-strong);
+        color: #fff;
+    }
 </style>
 
 <section class="panel">
@@ -246,9 +311,28 @@
 
         <button type="button" id="rename-toggle" class="icon-button {{ 'is-hidden' if rename_open else '' }}"
             aria-label="Rename element" aria-expanded="{{ 'true' if rename_open else 'false' }}">✏️</button>
+
+        <div class="repeat-stepper" aria-label="Repeat count">
+            {% if element.repeat_count > 1 %}
+            <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/repeat-count"
+                {% if has_rows %}onsubmit="return confirm('Decreasing the repeat count will delete the highest-numbered reps and all their progress. Continue?');"{% endif %}>
+                <input type="hidden" name="repeat_count" value="{{ element.repeat_count - 1 }}">
+                <button type="submit" aria-label="Decrease repeat count">−</button>
+            </form>
+            {% endif %}
+            <span class="repeat-stepper-count">×{{ element.repeat_count }}</span>
+            {% if element.repeat_count < 99 %}
+            <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/repeat-count">
+                <input type="hidden" name="repeat_count" value="{{ element.repeat_count + 1 }}">
+                <button type="submit" aria-label="Increase repeat count">+</button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 
     {% if rename_error %}<p style="color: #a44f62; font-weight: 600">{{ rename_error }}</p>{% endif %}
+
+    {% if repeat_error %}<p style="color: #a44f62; font-weight: 600">{{ repeat_error }}</p>{% endif %}
 
     {% if error %}<p style="color: #a44f62; font-weight: 600">{{ error }}</p>{% endif %}
 
@@ -274,6 +358,13 @@
 
         <div class="pattern-preview">
             {% if rows %}
+            {% if element.repeat_count > 1 %}
+            <nav class="rep-pills" aria-label="Repetitions">
+                {% for n in rep_numbers %}
+                <a href="?rep={{ n }}" class="rep-pill{{ ' rep-pill--active' if n == rep_number }}">Rep {{ n }}</a>
+                {% endfor %}
+            </nav>
+            {% endif %}
             <ul class="row-list">
                 {% for row in rows %}
                 {% include "projects/_row.html" with context %}

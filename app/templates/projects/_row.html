@@ -4,7 +4,7 @@
 <li id="row-{{ row.id }}" class="row-item row-item--{{ state.value }}{{ ' row-item--current' if is_current else '' }}">
     <button type="button"
         class="row-toggle"
-        hx-post="/projects/{{ project.id }}/elements/{{ element.id }}/rows/{{ row.id }}/state"
+        hx-post="/projects/{{ project.id }}/elements/{{ element.id }}/reps/{{ rep_number }}/rows/{{ row.id }}/state"
         hx-target="closest li"
         hx-swap="outerHTML"
         hx-on::responseError="this.closest('li').classList.add('row-item--error')"

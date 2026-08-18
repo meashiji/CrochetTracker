@@ -74,11 +74,11 @@ async def test_project_detail_shows_row_state_breakdown(
     # Row 1 -> done (two toggles), Row 2 -> in_progress (one toggle), Row 3 stays not_started.
     for _ in range(2):
         await async_client.post(
-            f"/projects/{project.id}/elements/{element.id}/rows/{rows[0].id}/state",
+            f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{rows[0].id}/state",
             follow_redirects=False,
         )
     await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rows/{rows[1].id}/state",
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{rows[1].id}/state",
         follow_redirects=False,
     )
 

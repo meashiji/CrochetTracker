@@ -1,5 +1,5 @@
 import pytest
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from app.models.pattern import Row
 from app.models.progress import RowState, RowStateEnum
@@ -70,6 +70,49 @@ async def _row_state(db_session, row_id):
     return result.scalar_one()
 
 
+async def _repetition(db_session, element_id, rep_number):
+    result = await db_session.execute(
+        select(ElementRepetition)
+        .where(
+            ElementRepetition.element_id == element_id,
+            ElementRepetition.repetition_number == rep_number,
+        )
+        .execution_options(populate_existing=True)
+    )
+    return result.scalar_one()
+
+
+async def _rep_row_state(db_session, element_id, rep_number, row_id):
+    rep = await _repetition(db_session, element_id, rep_number)
+    result = await db_session.execute(
+        select(RowState)
+        .where(RowState.element_repetition_id == rep.id, RowState.row_id == row_id)
+        .execution_options(populate_existing=True)
+    )
+    return result.scalar_one()
+
+
+async def _rep_count(db_session, element_id):
+    result = await db_session.execute(
+        select(func.count(ElementRepetition.id)).where(
+            ElementRepetition.element_id == element_id
+        )
+    )
+    return result.scalar_one()
+
+
+async def _state_count(db_session, element_id):
+    rep_ids_sub = select(ElementRepetition.id).where(
+        ElementRepetition.element_id == element_id
+    )
+    result = await db_session.execute(
+        select(func.count(RowState.id)).where(
+            RowState.element_repetition_id.in_(rep_ids_sub)
+        )
+    )
+    return result.scalar_one()
+
+
 async def test_toggle_cycles_not_started_to_in_progress(
     test_user, async_client, db_session, project_element_rows
 ):
@@ -77,7 +120,7 @@ async def test_toggle_cycles_not_started_to_in_progress(
     row = rows[0]
 
     response = await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rows/{row.id}/state",
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state",
         follow_redirects=False,
     )
 
@@ -94,7 +137,7 @@ async def test_toggle_full_cycle_returns_to_not_started(
 ):
     project, element, rows = project_element_rows
     row = rows[0]
-    url = f"/projects/{project.id}/elements/{element.id}/rows/{row.id}/state"
+    url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state"
 
     await async_client.post(url, follow_redirects=False)
     await async_client.post(url, follow_redirects=False)
@@ -113,7 +156,7 @@ async def test_toggle_persists_across_reload(
     row = rows[0]
 
     await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rows/{row.id}/state",
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state",
         follow_redirects=False,
     )
 
@@ -132,7 +175,7 @@ async def test_toggle_bumps_project_updated_at(
     updated_before = project.updated_at
 
     await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rows/{row.id}/state",
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state",
         follow_redirects=False,
     )
 
@@ -148,7 +191,7 @@ async def test_toggle_other_user_sees_404_and_does_not_change_state(
     row = rows[0]
 
     response = await second_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rows/{row.id}/state",
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state",
         follow_redirects=False,
     )
 
@@ -174,7 +217,7 @@ async def test_toggle_wrong_element_pairing_sees_404(
     # row belongs to `element`, not `other_element` — the URL pairing must 404
     # even though test_user owns both projects.
     response = await async_client.post(
-        f"/projects/{other_project.id}/elements/{other_element.id}/rows/{row.id}/state",
+        f"/projects/{other_project.id}/elements/{other_element.id}/reps/1/rows/{row.id}/state",
         follow_redirects=False,
     )
 
@@ -190,7 +233,7 @@ async def test_auto_jump_first_non_done_row(
 ):
     """Rows 1-2 done, rows 3+ not started — row 3 is the current row."""
     project, element, rows = project_element_rows
-    url_base = f"/projects/{project.id}/elements/{element.id}/rows"
+    url_base = f"/projects/{project.id}/elements/{element.id}/reps/1/rows"
 
     # Mark rows 1 and 2 done (two toggles each).
     for row in rows[:2]:
@@ -210,7 +253,7 @@ async def test_auto_jump_all_done_no_current(
 ):
     """All rows done — no current row, page renders without error."""
     project, element, rows = project_element_rows
-    url_base = f"/projects/{project.id}/elements/{element.id}/rows"
+    url_base = f"/projects/{project.id}/elements/{element.id}/reps/1/rows"
 
     for row in rows:
         await async_client.post(f"{url_base}/{row.id}/state", follow_redirects=False)
@@ -240,3 +283,252 @@ async def test_auto_jump_no_rows_no_crash(test_user, async_client, db_session):
     await db_session.execute(delete(Element).where(Element.id == element.id))
     await db_session.execute(delete(Project).where(Project.id == project.id))
     await db_session.commit()
+
+
+async def test_stepper_increase_seeds_reps_and_states(
+    test_user, async_client, db_session, project_element_rows
+):
+    """1 → 3: reps 2-3 are created and every row gets a not_started state per rep."""
+    project, element, rows = project_element_rows
+
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 3},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    await db_session.refresh(element)
+    assert element.repeat_count == 3
+    assert await _rep_count(db_session, element.id) == 3
+    assert await _state_count(db_session, element.id) == 3 * len(rows)
+    for rep_number in (2, 3):
+        for row in rows:
+            row_state = await _rep_row_state(db_session, element.id, rep_number, row.id)
+            assert row_state.state == RowStateEnum.not_started
+
+
+async def test_stepper_decrease_deletes_top_reps_and_their_states(
+    test_user, async_client, db_session, project_element_rows
+):
+    """3 → 2: rep 3 and only its RowStates are deleted; reps 1-2 keep theirs."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+
+    await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 3},
+        follow_redirects=False,
+    )
+    # Distinct mark so we can tell a surviving rep's progress is intact.
+    await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state",
+        follow_redirects=False,
+    )
+
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 2},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    await db_session.refresh(element)
+    assert element.repeat_count == 2
+    assert await _rep_count(db_session, element.id) == 2
+    assert await _state_count(db_session, element.id) == 2 * len(rows)
+    row_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert row_state.state == RowStateEnum.in_progress
+
+
+async def test_stepper_validation_error_rerenders_without_changes(
+    test_user, async_client, db_session, project_element_rows
+):
+    project, element, rows = project_element_rows
+
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 0},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 200
+    assert "Repeat count must be between 1 and 99." in response.text
+    await db_session.refresh(element)
+    assert element.repeat_count == 1
+    assert await _rep_count(db_session, element.id) == 1
+    assert await _state_count(db_session, element.id) == len(rows)
+
+
+async def test_stepper_no_rows_element_changes_field_only(
+    test_user, async_client, db_session
+):
+    """No pattern saved: the stepper updates repeat_count without creating reps."""
+    project = Project(user_id=test_user.id, name="Empty project")
+    db_session.add(project)
+    await db_session.commit()
+
+    element = Element(project_id=project.id, name="Empty element", repeat_count=1)
+    db_session.add(element)
+    await db_session.commit()
+
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 5},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    await db_session.refresh(element)
+    assert element.repeat_count == 5
+    assert await _rep_count(db_session, element.id) == 0
+
+    await db_session.execute(delete(Element).where(Element.id == element.id))
+    await db_session.execute(delete(Project).where(Project.id == project.id))
+    await db_session.commit()
+
+
+async def test_stepper_other_user_sees_404(
+    test_user, second_user, db_session, project_element_rows
+):
+    _second_user, second_client = second_user
+    project, element, rows = project_element_rows
+
+    response = await second_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 3},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 404
+    await db_session.refresh(element)
+    assert element.repeat_count == 1
+    assert await _rep_count(db_session, element.id) == 1
+
+
+async def test_per_rep_toggle_isolation(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Toggling a row in rep 2 leaves rep 1's state for that row untouched."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+
+    await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 2},
+        follow_redirects=False,
+    )
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/reps/2/rows/{row.id}/state",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 200
+    rep_2_state = await _rep_row_state(db_session, element.id, 2, row.id)
+    assert rep_2_state.state == RowStateEnum.in_progress
+    rep_1_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert rep_1_state.state == RowStateEnum.not_started
+
+
+async def test_rep_resolution_query_param_cookie_and_404(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Explicit ?rep wins and is pinned to a cookie; a bare GET reads the cookie;
+    out-of-range or non-integer ?rep is a bad URL and 404s."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+    # Differing mark: rep 2's row 1 goes in_progress, rep 1's stays not_started.
+    await async_client.post(
+        f"{element_url}/reps/2/rows/{row.id}/state", follow_redirects=False
+    )
+
+    # Bare GET with no cookie renders rep 1.
+    response = await async_client.get(element_url)
+    assert response.status_code == 200
+    assert f"{element_url}/reps/1/rows/" in response.text
+    assert "◐" not in response.text
+
+    # Explicit ?rep=2 renders rep 2 and pins the cookie.
+    response = await async_client.get(f"{element_url}?rep=2")
+    assert response.status_code == 200
+    assert f"{element_url}/reps/2/rows/" in response.text
+    assert "◐" in response.text
+    assert f"last_rep_{element.id}=2" in response.headers["set-cookie"]
+
+    # A subsequent bare GET (client retains the cookie) still renders rep 2.
+    response = await async_client.get(element_url)
+    assert response.status_code == 200
+    assert f"{element_url}/reps/2/rows/" in response.text
+    assert "◐" in response.text
+
+    # Bad URLs 404 — explicit params are never clamped.
+    response = await async_client.get(f"{element_url}?rep=99")
+    assert response.status_code == 404
+    response = await async_client.get(f"{element_url}?rep=abc")
+    assert response.status_code == 404
+
+
+async def test_stale_rep_cookie_is_clamped_not_404(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Cookie points at rep 2, count drops to 1 — bare GET clamps to rep 1."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+    response = await async_client.get(f"{element_url}?rep=2")
+    assert response.status_code == 200
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 1}, follow_redirects=False
+    )
+
+    response = await async_client.get(element_url)
+    assert response.status_code == 200
+    assert f"{element_url}/reps/1/rows/" in response.text
+
+
+async def test_auto_jump_is_per_rep(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Rep 1 all done has no current row; rep 2 with row 1 done jumps to row 2."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+    # Rep 1: all rows done. Rep 2: only row 1 done.
+    for row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+    await async_client.post(
+        f"{element_url}/reps/2/rows/{rows[0].id}/state", follow_redirects=False
+    )
+    await async_client.post(
+        f"{element_url}/reps/2/rows/{rows[0].id}/state", follow_redirects=False
+    )
+
+    response = await async_client.get(f"{element_url}?rep=1")
+    assert response.status_code == 200
+    # No row is current (the trailing quote keeps the CSS rule from matching).
+    assert 'row-item--current"' not in response.text
+
+    response = await async_client.get(f"{element_url}?rep=2")
+    assert response.status_code == 200
+    second_row_marker = (
+        f'<li id="row-{rows[1].id}" '
+        'class="row-item row-item--not_started row-item--current">'
+    )
+    assert second_row_marker in response.text
