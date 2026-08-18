@@ -104,6 +104,27 @@ async def test_project_detail_shows_row_state_breakdown(
     await db_session.commit()
 
 
+async def test_project_detail_shows_repeat_count_badge(
+    test_user, async_client, db_session
+):
+    """Each element row shows its repeat count as a ×N badge next to the name."""
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    element = Element(project_id=project.id, name="Body", repeat_count=3)
+    db_session.add(element)
+    await db_session.commit()
+
+    response = await async_client.get(f"/projects/{project.id}", follow_redirects=False)
+
+    assert response.status_code == 200
+    assert "×3" in response.text
+
+    await db_session.execute(delete(Element).where(Element.id == element.id))
+    await db_session.commit()
+
+
 async def test_project_detail_other_user_sees_404(test_user, async_client, db_session):
     other_user = User(email="other@example.com", password_hash="x")
     db_session.add(other_user)

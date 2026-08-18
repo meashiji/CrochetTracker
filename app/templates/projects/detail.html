@@ -22,6 +22,12 @@
         flex-shrink: 0;
     }
 
+    .repeat-badge {
+        margin-right: 6px;
+        font-weight: 600;
+        color: var(--accent-strong);
+    }
+
     .state-breakdown {
         display: inline-flex;
         gap: 8px;
@@ -143,6 +149,7 @@
                 </form>
 
                 <span class="subtle element-count {{ 'is-hidden' if rename_error_element_id == element.id else '' }}">
+                    <span class="repeat-badge">×{{ element.repeat_count }}</span>
                     {% if row_count > 0 %}
                     {{ row_count }} row{{ "s" if row_count != 1 else "" }}
                     <span class="state-breakdown">

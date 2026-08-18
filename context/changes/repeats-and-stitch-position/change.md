@@ -20,3 +20,7 @@ Known constraint from S-02 planning: `repeat_count` is hard-coded to 1 at elemen
 creation (app/routes/projects.py), and S-02's toggle route resolves "the" single
 ElementRepetition via `.scalar_one()` — both will need revisiting here. The
 RowState.stitch_position column exists but is unused so far.
+
+- **Scope addition (user, mid-Phase-1)**: show the repeat count as a `×N` badge
+  per element in the project detail element list (`projects/detail.html`). The
+  element detail page already displays `×N` via the Phase 1 stepper in the title row.
