@@ -100,6 +100,37 @@
         display: block;
     }
 
+    /* Flex row: the toggle stretches, the stitch input hugs the edge. */
+    .row-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .row-item .row-toggle {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .row-stitch {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        color: var(--muted);
+    }
+
+    .row-stitch input {
+        width: 72px;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fffdfb;
+        color: var(--text);
+        font: inherit;
+    }
+
     /* Out-specifies base.html's global `button[type="submit"]` pink-pill style —
        this button submits the toggle form (no JS yet in Phase 1), so it can't
        simply be type="button" instead. */

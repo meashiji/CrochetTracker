@@ -260,12 +260,12 @@ None. Every column and constraint this plan uses (`Element.repeat_count`, `Eleme
 
 #### Automated
 
-- [ ] 2.1 New tests pass: `uv run pytest tests/test_row_state_routes.py -v` (stitch cases)
-- [ ] 2.2 Full suite still passes: `uv run pytest`
+- [x] 2.1 New tests pass: `uv run pytest tests/test_row_state_routes.py -v` (stitch cases)
+- [x] 2.2 Full suite still passes: `uv run pytest`
 
 #### Manual
 
-- [ ] 2.3 Stitch input appears on in-progress row, saves on change without reload, persists across page reload
-- [ ] 2.4 Stitch value survives cycling to done and back to in-progress
-- [ ] 2.5 Clearing the input removes the position (confirmed after reload)
-- [ ] 2.6 Invalid input shows error styling; stored value unchanged
+- [x] 2.3 Stitch input appears on in-progress row, saves on change without reload, persists across page reload
+- [x] 2.4 Stitch value survives cycling to done and back to in-progress
+- [x] 2.5 Clearing the input removes the position (confirmed after reload)
+- [x] 2.6 Invalid input shows error styling; stored value unchanged

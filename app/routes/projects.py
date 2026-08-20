@@ -169,11 +169,15 @@ def _resolve_requested_rep(request: Request, element: Element) -> tuple[int, boo
     return max(1, min(rep_number, element.repeat_count)), False
 
 
-async def _build_row_states(
+async def _build_row_progress(
     repetition_id: int, rows: list[Row], session: AsyncSession
-) -> dict[int, RowStateEnum]:
+) -> dict[int, RowState]:
     """
-    Build a dictionary mapping row IDs to their states for one repetition.
+    Build a dictionary mapping row IDs to their full row progress for one repetition.
+
+    Carries the whole ``RowState`` object (state + stitch_position) rather than a
+    derived value, so a single query feeds both the toggle glyph and the stitch
+    input.
 
     Args:
         repetition_id (int): id of the element repetition to fetch states for
@@ -181,7 +185,7 @@ async def _build_row_states(
         session (AsyncSession): database session
 
     Returns:
-        dict[int, RowStateEnum]: dictionary mapping row IDs to their states
+        dict[int, RowState]: dictionary mapping row IDs to their RowState objects
     """
     if not rows:
         return {}
@@ -189,15 +193,16 @@ async def _build_row_states(
         select(RowState).where(RowState.element_repetition_id == repetition_id)
     )
     row_states = result.scalars().all()
-    return {row_state.row_id: row_state.state for row_state in row_states}
+    return {row_state.row_id: row_state for row_state in row_states}
 
 
 def _first_unmarked_row_id(
-    rows: list[Row], row_states: dict[int, RowStateEnum]
+    rows: list[Row], row_progress: dict[int, RowState]
 ) -> int | None:
     """Return the id of the first row whose state is not ``done``, or ``None``."""
     for row in rows:
-        if row_states.get(row.id) != RowStateEnum.done:
+        row_state = row_progress.get(row.id)
+        if row_state is None or row_state.state != RowStateEnum.done:
             return row.id
     return None
 
@@ -516,20 +521,20 @@ async def _render_element_detail(
         repetition = await _get_element_repetition_by_number(
             element.id, rep_number, session
         )
-        row_states = await _build_row_states(repetition.id, rows, session)
+        row_progress = await _build_row_progress(repetition.id, rows, session)
     else:
         # No pattern saved yet: no repetitions exist, so there is nothing to
         # resolve or scope — show the degenerate rep 1 and never write a cookie.
         rep_number, is_explicit = 1, False
-        row_states = {}
+        row_progress = {}
 
-    current_row_id = _first_unmarked_row_id(rows, row_states)
+    current_row_id = _first_unmarked_row_id(rows, row_progress)
     context = {
         "user": user,
         "project": project,
         "element": element,
         "rows": rows,
-        "row_states": row_states,
+        "row_progress": row_progress,
         "has_rows": len(rows) > 0,
         "current_row_id": current_row_id,
         "rep_number": rep_number,
@@ -891,9 +896,73 @@ async def row_state_toggle(
             "project": project,
             "element": element,
             "row": row,
-            "row_states": {row.id: row_state.state},
+            "row_progress": {row.id: row_state},
             "current_row_id": None,
             "rep_number": rep_number,
         },
         status_code=200,
     )
+
+
+@router.post(
+    "/{project_id}/elements/{element_id}/reps/{rep_number}/rows/{row_id}/stitch"
+)
+async def row_stitch_position(
+    request: Request,
+    project_id: int,
+    element_id: int,
+    rep_number: int,
+    row_id: int,
+    stitch_position: str = Form(default=""),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    project, element, row = await _get_project_element_and_row(
+        project_id, element_id, row_id, user, session
+    )
+    repetition = await _get_element_repetition_by_number(
+        element.id, rep_number, session
+    )
+    result = await session.execute(
+        select(RowState).where(
+            RowState.element_repetition_id == repetition.id,
+            RowState.row_id == row.id,
+        )
+    )
+    row_state = result.scalar_one()
+
+    def _render_fragment(*, stitch_error: bool = False):
+        return templates.TemplateResponse(
+            request,
+            "projects/_row.html",
+            {
+                "project": project,
+                "element": element,
+                "row": row,
+                "row_progress": {row.id: row_state},
+                "current_row_id": None,
+                "rep_number": rep_number,
+                "stitch_error": stitch_error,
+            },
+            status_code=200,
+        )
+
+    value = stitch_position.strip()
+    if value == "":
+        row_state.stitch_position = None
+    elif not value.isdigit() or not (1 <= int(value) <= 9999):
+        # Invalid input: re-render the row with the error treatment and write
+        # nothing — the DB value is left untouched.
+        return _render_fragment(stitch_error=True)
+    else:
+        row_state.stitch_position = int(value)
+
+    session.add(row_state)
+
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+
+    # Commit so the fragment reflects the new value.
+    await session.commit()
+
+    return _render_fragment()

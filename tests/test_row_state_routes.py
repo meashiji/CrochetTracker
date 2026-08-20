@@ -562,3 +562,145 @@ async def test_auto_jump_is_per_rep(
         'class="row-item row-item--not_started row-item--current">'
     )
     assert second_row_marker in response.text
+
+
+async def test_stitch_set_persists_and_renders_in_fragment(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Set 14 on an in-progress row: DB updated and the swapped fragment re-renders
+    the input with the value."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    row_url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}"
+
+    # not_started -> in_progress so the stitch input renders.
+    await async_client.post(f"{row_url}/state", follow_redirects=False)
+
+    response = await async_client.post(
+        f"{row_url}/stitch",
+        data={"stitch_position": "14"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 200
+    assert 'value="14"' in response.text
+    row_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert row_state.stitch_position == 14
+
+
+async def test_stitch_blank_clears_position(
+    test_user, async_client, db_session, project_element_rows
+):
+    project, element, rows = project_element_rows
+    row = rows[0]
+    row_url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}"
+
+    await async_client.post(f"{row_url}/state", follow_redirects=False)
+    await async_client.post(
+        f"{row_url}/stitch", data={"stitch_position": "14"}, follow_redirects=False
+    )
+    row_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert row_state.stitch_position == 14
+
+    response = await async_client.post(
+        f"{row_url}/stitch", data={"stitch_position": ""}, follow_redirects=False
+    )
+
+    assert response.status_code == 200
+    row_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert row_state.stitch_position is None
+
+
+@pytest.mark.parametrize("bad_value", ["abc", "0", "10000"])
+async def test_stitch_invalid_input_renders_error_and_keeps_db_unchanged(
+    test_user, async_client, db_session, project_element_rows, bad_value
+):
+    """Non-numeric / out-of-range input: 200 error fragment, no DB write."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    row_url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}"
+
+    await async_client.post(f"{row_url}/state", follow_redirects=False)
+    await async_client.post(
+        f"{row_url}/stitch", data={"stitch_position": "14"}, follow_redirects=False
+    )
+
+    response = await async_client.post(
+        f"{row_url}/stitch",
+        data={"stitch_position": bad_value},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 200
+    assert "row-item--error" in response.text
+    # The field re-renders with the stored value, not the rejected garbage.
+    assert 'value="14"' in response.text
+    row_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert row_state.stitch_position == 14
+
+
+async def test_stitch_survives_state_cycle(
+    test_user, async_client, db_session, project_element_rows
+):
+    """The value persists across done -> not_started -> in_progress and the input
+    re-renders with it on the full page."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    row_url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}"
+
+    await async_client.post(f"{row_url}/state", follow_redirects=False)
+    await async_client.post(
+        f"{row_url}/stitch", data={"stitch_position": "14"}, follow_redirects=False
+    )
+
+    # in_progress -> done -> not_started -> in_progress
+    for _ in range(3):
+        await async_client.post(f"{row_url}/state", follow_redirects=False)
+
+    row_state = await _rep_row_state(db_session, element.id, 1, row.id)
+    assert row_state.state == RowStateEnum.in_progress
+    assert row_state.stitch_position == 14
+
+    response = await async_client.get(
+        f"/projects/{project.id}/elements/{element.id}", follow_redirects=False
+    )
+    assert response.status_code == 200
+    assert 'value="14"' in response.text
+
+
+async def test_stitch_input_renders_only_for_in_progress_rows(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Full-page GET: the stitch input appears only on in-progress rows."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    row_url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}"
+
+    await async_client.post(f"{row_url}/state", follow_redirects=False)
+
+    response = await async_client.get(
+        f"/projects/{project.id}/elements/{element.id}", follow_redirects=False
+    )
+    assert response.status_code == 200
+    # Only row 1 is in-progress; the CSS selectors in the <style> block don't
+    # contain `class="row-stitch"`, so this counts rendered labels only.
+    assert response.text.count('class="row-stitch"') == 1
+    # The input must carry a name so HTMX serializes its value on change — a
+    # nameless input posts blank, silently clearing the stored position.
+    assert 'name="stitch_position"' in response.text
+
+
+async def test_stitch_other_user_sees_404(
+    test_user, second_user, db_session, project_element_rows
+):
+    _second_user, second_client = second_user
+    project, element, rows = project_element_rows
+    row = rows[0]
+
+    response = await second_client.post(
+        f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/stitch",
+        data={"stitch_position": "14"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 404
