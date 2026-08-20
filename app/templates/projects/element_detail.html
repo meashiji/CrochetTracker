@@ -315,14 +315,16 @@
         <div class="repeat-stepper" aria-label="Repeat count">
             {% if element.repeat_count > 1 %}
             <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/repeat-count"
-                {% if has_rows %}onsubmit="return confirm('Decreasing the repeat count will delete the highest-numbered reps and all their progress. Continue?');"{% endif %}>
+                {% if has_rows %}onsubmit="if (!confirm('Decreasing the repeat count will delete the highest-numbered reps and all their progress. Continue?')) return false; this.querySelector('button[type=submit]').disabled = true;"
+                {% else %}onsubmit="this.querySelector('button[type=submit]').disabled = true;"{% endif %}>
                 <input type="hidden" name="repeat_count" value="{{ element.repeat_count - 1 }}">
                 <button type="submit" aria-label="Decrease repeat count">−</button>
             </form>
             {% endif %}
             <span class="repeat-stepper-count">×{{ element.repeat_count }}</span>
             {% if element.repeat_count < 99 %}
-            <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/repeat-count">
+            <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/repeat-count"
+                onsubmit="this.querySelector('button[type=submit]').disabled = true;">
                 <input type="hidden" name="repeat_count" value="{{ element.repeat_count + 1 }}">
                 <button type="submit" aria-label="Increase repeat count">+</button>
             </form>

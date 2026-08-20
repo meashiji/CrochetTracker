@@ -341,6 +341,36 @@ async def test_stepper_decrease_deletes_top_reps_and_their_states(
     assert row_state.state == RowStateEnum.in_progress
 
 
+async def test_stepper_increase_skips_existing_rep_numbers(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Post-race state: reps exist ahead of the field. An increase must derive its
+    seed range from the actual reps (not element.repeat_count) so it never
+    re-inserts an existing repetition number."""
+    project, element, rows = project_element_rows
+
+    # Simulate the post-race invariant break: reps 1-2 exist, field is still 1.
+    extra_rep = ElementRepetition(element_id=element.id, repetition_number=2)
+    db_session.add(extra_rep)
+    await db_session.flush()
+    db_session.add_all(
+        RowState(element_repetition_id=extra_rep.id, row_id=row.id) for row in rows
+    )
+    await db_session.commit()
+
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 3},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    await db_session.refresh(element)
+    assert element.repeat_count == 3
+    assert await _rep_count(db_session, element.id) == 3
+    assert await _state_count(db_session, element.id) == 3 * len(rows)
+
+
 async def test_stepper_validation_error_rerenders_without_changes(
     test_user, async_client, db_session, project_element_rows
 ):

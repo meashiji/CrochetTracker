@@ -245,16 +245,16 @@ None. Every column and constraint this plan uses (`Element.repeat_count`, `Eleme
 
 #### Automated
 
-- [x] 1.1 Updated + new tests pass: `uv run pytest tests/test_row_state_routes.py -v`
-- [x] 1.2 Full suite still passes: `uv run pytest`
+- [x] 1.1 Updated + new tests pass: `uv run pytest tests/test_row_state_routes.py -v` — d157bc5
+- [x] 1.2 Full suite still passes: `uv run pytest` — d157bc5
 
 #### Manual
 
-- [x] 1.3 Set ×3: pills appear, each rep shows all rows at not-started
-- [x] 1.4 Per-rep independence: different marks per rep persist across reloads and pill switches
-- [x] 1.5 Bare URL reopens on last-viewed rep, jumped to its first non-done row
-- [x] 1.6 Decrease ×3 → ×2: confirm dialog, Rep 3 gone with its progress
-- [x] 1.7 No-pattern element: stepper changes count, no pills, page otherwise unchanged
+- [x] 1.3 Set ×3: pills appear, each rep shows all rows at not-started — d157bc5
+- [x] 1.4 Per-rep independence: different marks per rep persist across reloads and pill switches — d157bc5
+- [x] 1.5 Bare URL reopens on last-viewed rep, jumped to its first non-done row — d157bc5
+- [x] 1.6 Decrease ×3 → ×2: confirm dialog, Rep 3 gone with its progress — d157bc5
+- [x] 1.7 No-pattern element: stepper changes count, no pills, page otherwise unchanged — d157bc5
 
 ### Phase 2: Stitch position recording
 

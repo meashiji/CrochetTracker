@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
@@ -18,6 +19,8 @@ router = APIRouter(prefix="/projects")
 templates = Jinja2Templates(directory="app/templates")
 
 MAX_PATTERN_LENGTH = 50_000
+
+ROW_STATE_SEED_CHUNK = 10_000
 
 ROW_STATE_CYCLE: dict[RowStateEnum, RowStateEnum] = {
     RowStateEnum.not_started: RowStateEnum.in_progress,
@@ -540,7 +543,10 @@ async def _render_element_detail(
         # Pin the rep only when the user explicitly picked one (pill click) —
         # a bare GET must not re-pin a rep the user didn't choose this visit.
         response.set_cookie(
-            f"last_rep_{element.id}", str(rep_number), max_age=31_536_000
+            f"last_rep_{element.id}",
+            str(rep_number),
+            max_age=31_536_000,
+            samesite="lax",
         )
     return response
 
@@ -766,48 +772,76 @@ async def element_repeat_count(
     # Invariant: whenever an element has rows, its ElementRepetition rows exactly
     # match repeat_count (numbered 1..N). With no rows there are no repetitions
     # and the stepper is a plain field update.
-    if rows:
-        if repeat_count > element.repeat_count:
-            new_reps = [
-                ElementRepetition(element_id=element.id, repetition_number=i)
-                for i in range(element.repeat_count + 1, repeat_count + 1)
-            ]
-            for rep in new_reps:
-                session.add(rep)
-            await session.flush()  # populate PKs before RowState inserts reference them
-            session.add_all(
-                RowState(
-                    element_repetition_id=rep.id,
-                    row_id=row.id,
-                    state=RowStateEnum.not_started,
-                )
-                for rep in new_reps
-                for row in rows
-            )
-        elif repeat_count < element.repeat_count:
-            removed_rep_ids = [
-                rep.id for rep in existing_reps if rep.repetition_number > repeat_count
-            ]
-            if removed_rep_ids:
-                # FK-safe order: RowStates before their ElementRepetitions.
-                await session.execute(
-                    delete(RowState).where(
-                        RowState.element_repetition_id.in_(removed_rep_ids)
-                    )
-                )
-                await session.execute(
-                    delete(ElementRepetition).where(
-                        ElementRepetition.id.in_(removed_rep_ids)
-                    )
-                )
+    #
+    # The rep work is driven by the freshly fetched reps (their max number), NOT
+    # the element field: under a double-submit race the field can lag the actual
+    # reps, and seeding from the field would re-insert existing repetition numbers
+    # and trip the (element_id, repetition_number) unique constraint.
+    existing_max = max((rep.repetition_number for rep in existing_reps), default=0)
 
-    element.repeat_count = repeat_count
-    session.add(element)
-    project.updated_at = datetime.now(timezone.utc)
-    session.add(project)
+    try:
+        if rows:
+            if repeat_count > existing_max:
+                new_reps = [
+                    ElementRepetition(element_id=element.id, repetition_number=i)
+                    for i in range(existing_max + 1, repeat_count + 1)
+                ]
+                for rep in new_reps:
+                    session.add(rep)
+                await session.flush()  # populate PKs before RowState inserts reference them
+                # Seed RowStates in chunks so a pathological 1→99 increase on a
+                # huge pattern never materializes the whole reps×rows cartesian
+                # product as one unbounded unit of work.
+                pending_row_states: list[RowState] = []
+                for rep in new_reps:
+                    for row in rows:
+                        pending_row_states.append(
+                            RowState(
+                                element_repetition_id=rep.id,
+                                row_id=row.id,
+                                state=RowStateEnum.not_started,
+                            )
+                        )
+                        if len(pending_row_states) >= ROW_STATE_SEED_CHUNK:
+                            session.add_all(pending_row_states)
+                            await session.flush()
+                            pending_row_states = []
+                if pending_row_states:
+                    session.add_all(pending_row_states)
+            elif repeat_count < existing_max:
+                removed_rep_ids = [
+                    rep.id
+                    for rep in existing_reps
+                    if rep.repetition_number > repeat_count
+                ]
+                if removed_rep_ids:
+                    # FK-safe order: RowStates before their ElementRepetitions.
+                    await session.execute(
+                        delete(RowState).where(
+                            RowState.element_repetition_id.in_(removed_rep_ids)
+                        )
+                    )
+                    await session.execute(
+                        delete(ElementRepetition).where(
+                            ElementRepetition.id.in_(removed_rep_ids)
+                        )
+                    )
 
-    # Commit before redirect so the follow-up GET sees the new rep structure.
-    await session.commit()
+        element.repeat_count = repeat_count
+        session.add(element)
+        project.updated_at = datetime.now(timezone.utc)
+        session.add(project)
+
+        # Commit before redirect so the follow-up GET sees the new rep structure.
+        await session.commit()
+    except IntegrityError:
+        # Graceful degradation on a duplicate-seed race (e.g. two concurrent + or
+        # − submits): the other request already landed its reps — roll back and
+        # bounce to the element page rather than 500.
+        await session.rollback()
+        return RedirectResponse(
+            url=f"/projects/{project_id}/elements/{element_id}", status_code=303
+        )
 
     # Bare URL, no ?rep= — a stale last-rep cookie is clamped on the next read
     # rather than 404ing the user out of their own page.
