@@ -1,7 +1,7 @@
 ---
 change_id: repeats-and-stitch-position
 title: Repeat element tracking + stitch position recording
-status: implemented
+status: impl_reviewed
 created: 2026-08-01
 updated: 2026-08-20
 archived_at: null

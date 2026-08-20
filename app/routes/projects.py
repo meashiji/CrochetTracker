@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, insert, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +19,6 @@ router = APIRouter(prefix="/projects")
 templates = Jinja2Templates(directory="app/templates")
 
 MAX_PATTERN_LENGTH = 50_000
-
-ROW_STATE_SEED_CHUNK = 10_000
 
 ROW_STATE_CYCLE: dict[RowStateEnum, RowStateEnum] = {
     RowStateEnum.not_started: RowStateEnum.in_progress,
@@ -371,6 +369,12 @@ async def project_create(
     await session.flush()
     element = Element(project_id=project.id, name=None, repeat_count=1, created_at=now)
     session.add(element)
+
+    # Commit before redirect so the follow-up GET sees the new project.
+    # get_session also commits after the handler returns, but the browser can
+    # send the redirect GET before that cleanup runs.
+    await session.commit()
+
     return RedirectResponse(url=f"/projects/{project.id}", status_code=303)
 
 
@@ -552,6 +556,8 @@ async def _render_element_detail(
             str(rep_number),
             max_age=31_536_000,
             samesite="lax",
+            secure=True,
+            httponly=True,
         )
     return response
 
@@ -743,7 +749,7 @@ async def element_save_pattern(
 
 
 @router.post("/{project_id}/elements/{element_id}/repeat-count")
-async def element_repeat_count(
+async def element_update_repeat_count(
     request: Request,
     project_id: int,
     element_id: int,
@@ -751,6 +757,8 @@ async def element_repeat_count(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    """Adjust an element's repeat count, seeding or pruning reps/RowStates to
+    match, then bounce to the element page."""
     project, element = await _get_project_and_element(
         project_id, element_id, user, session
     )
@@ -794,25 +802,24 @@ async def element_repeat_count(
                 for rep in new_reps:
                     session.add(rep)
                 await session.flush()  # populate PKs before RowState inserts reference them
-                # Seed RowStates in chunks so a pathological 1→99 increase on a
-                # huge pattern never materializes the whole reps×rows cartesian
-                # product as one unbounded unit of work.
-                pending_row_states: list[RowState] = []
-                for rep in new_reps:
-                    for row in rows:
-                        pending_row_states.append(
-                            RowState(
-                                element_repetition_id=rep.id,
-                                row_id=row.id,
-                                state=RowStateEnum.not_started,
-                            )
-                        )
-                        if len(pending_row_states) >= ROW_STATE_SEED_CHUNK:
-                            session.add_all(pending_row_states)
-                            await session.flush()
-                            pending_row_states = []
-                if pending_row_states:
-                    session.add_all(pending_row_states)
+                # Seed via a single bulk Core insert. ORM adds would hold every
+                # (rep, row) RowState in the session identity map until commit
+                # (reps × rows objects) — an OOM risk for a pathological 1→99
+                # increase on a huge pattern. Core insert bypasses the identity
+                # map. `state` is passed explicitly; the `updated_at` column
+                # default still applies.
+                await session.execute(
+                    insert(RowState),
+                    [
+                        {
+                            "element_repetition_id": rep.id,
+                            "row_id": row.id,
+                            "state": RowStateEnum.not_started,
+                        }
+                        for rep in new_reps
+                        for row in rows
+                    ],
+                )
             elif repeat_count < existing_max:
                 removed_rep_ids = [
                     rep.id
@@ -879,7 +886,9 @@ async def row_state_toggle(
             RowState.row_id == row.id,
         )
     )
-    row_state = result.scalar_one()
+    row_state = result.scalar_one_or_none()
+    if row_state is None:
+        raise HTTPException(status_code=404)
     row_state.state = ROW_STATE_CYCLE[row_state.state]
     session.add(row_state)
 
@@ -907,7 +916,7 @@ async def row_state_toggle(
 @router.post(
     "/{project_id}/elements/{element_id}/reps/{rep_number}/rows/{row_id}/stitch"
 )
-async def row_stitch_position(
+async def row_update_stitch_position(
     request: Request,
     project_id: int,
     element_id: int,
@@ -917,6 +926,8 @@ async def row_stitch_position(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    """Persist a row's stitch position (blank clears) and return the updated
+    row fragment; invalid input re-renders the row with error styling."""
     project, element, row = await _get_project_element_and_row(
         project_id, element_id, row_id, user, session
     )
@@ -929,7 +940,9 @@ async def row_stitch_position(
             RowState.row_id == row.id,
         )
     )
-    row_state = result.scalar_one()
+    row_state = result.scalar_one_or_none()
+    if row_state is None:
+        raise HTTPException(status_code=404)
 
     def _render_fragment(*, stitch_error: bool = False):
         return templates.TemplateResponse(
@@ -950,9 +963,11 @@ async def row_stitch_position(
     value = stitch_position.strip()
     if value == "":
         row_state.stitch_position = None
-    elif not value.isdigit() or not (1 <= int(value) <= 9999):
+    elif not value.isascii() or not value.isdigit() or not (1 <= int(value) <= 9999):
         # Invalid input: re-render the row with the error treatment and write
-        # nothing — the DB value is left untouched.
+        # nothing — the DB value is left untouched. `.isascii()` guards against
+        # Unicode superscript digits whose `.isdigit()` is True but that
+        # `int()` would reject.
         return _render_fragment(stitch_error=True)
     else:
         row_state.stitch_position = int(value)

@@ -306,6 +306,8 @@ async def test_stepper_increase_seeds_reps_and_states(
         for row in rows:
             row_state = await _rep_row_state(db_session, element.id, rep_number, row.id)
             assert row_state.state == RowStateEnum.not_started
+            # The bulk Core insert must still get the model's updated_at default.
+            assert row_state.updated_at is not None
 
 
 async def test_stepper_decrease_deletes_top_reps_and_their_states(
@@ -611,7 +613,7 @@ async def test_stitch_blank_clears_position(
     assert row_state.stitch_position is None
 
 
-@pytest.mark.parametrize("bad_value", ["abc", "0", "10000"])
+@pytest.mark.parametrize("bad_value", ["abc", "0", "10000", "¹"])
 async def test_stitch_invalid_input_renders_error_and_keeps_db_unchanged(
     test_user, async_client, db_session, project_element_rows, bad_value
 ):
