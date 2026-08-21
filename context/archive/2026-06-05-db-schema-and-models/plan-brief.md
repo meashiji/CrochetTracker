@@ -57,7 +57,7 @@ fly.toml       ── [deploy] release_command = "alembic upgrade head"
 | 2. SQLModel models | 6 entity models importable; all appear in `SQLModel.metadata` | `expire_on_commit=False` on sessionmaker; `UniqueConstraint` via SQLAlchemy import |
 | 3. Alembic + migration + Fly | Migration applied; `fly deploy` runs it automatically | `env.py` must import all models before setting `target_metadata`; asyncio runner required for asyncpg |
 
-**Prerequisites:** Fly Postgres provisioned ✓, `DATABASE_URL` Fly secret set ✓  
+**Prerequisites:** Fly Postgres provisioned ✓, `DATABASE_URL` Fly secret set ✓
 **Estimated effort:** ~1 focused session (2–3 hours) across 3 phases
 
 ## Open Risks & Assumptions
