@@ -63,7 +63,7 @@ New file `app/routes/projects.py` with `APIRouter(prefix="/projects")`. Register
 | 2. Pattern paste + parsing | Pattern form, parser service, Row+RowState eager init, re-paste warning | Deletion order (RowStates must go before Rows) |
 | 3. Project detail + add element | Project detail page, add-element form | Ownership check must be consistent across all routes |
 
-**Prerequisites:** F-01 (schema) ✓ done, F-02 (auth) ✓ done  
+**Prerequisites:** F-01 (schema) ✓ done, F-02 (auth) ✓ done
 **Estimated effort:** ~2 sessions across 3 phases
 
 ## Open Risks & Assumptions

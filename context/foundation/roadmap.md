@@ -103,7 +103,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Pattern row-boundary editor UX (FR-004 / FR-005): how does the user adjust boundaries after best-effort parse — drag-to-split, click-to-merge, or raw text edit? Owner: user. Block: no (design decision for /10x-plan, best-effort parse ships first).
 - **Risk:** The best-effort row parser (split by line, user-adjustable) must not block delivery — ship the simplest split first, make boundaries editable in a follow-up if needed. Don't let parser complexity delay S-02.
-- **Status:** done — all 3 phases implemented and impl-reviewed (context/changes/project-and-pattern-display/)
+- **Status:** done
 
 ### S-02: Row marking + persistence (north star)
 
@@ -191,6 +191,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **F-01: (foundation) SQLModel models (User, Project, Element, ElementRepetition, Row, RowState) defined; Alembic configured; DB connection wired to Fly Postgres via `DATABASE_URL`; migrations apply cleanly on deploy.** — Archived 2026-08-21 → `context/archive/2026-06-05-db-schema-and-models/`. Lesson: —.
 - **F-02: (foundation) user can sign up and sign in via email + password or magic link; an unauthenticated visitor is redirected to the sign-in screen; session middleware protects all project routes; every user sees only their own data.** — Archived 2026-08-21 → `context/archive/2026-06-13-auth-scaffold/`. Lesson: —.
+- **S-01: user can create a project, add a named element, paste a plain-text pattern, and see it displayed as a scrollable list of rows; user can switch between multiple projects.** — Archived 2026-08-21 → `context/archive/2026-06-27-project-and-pattern-display/`. Lesson: —.
 
 - **S-02: user can set a row to one of three states (not started / in-progress / done), toggle between them; on reopening the project, the view jumps to the first unmarked row and shows the exact previously-marked state — no manual save required.** — Archived 2026-08-01 → `context/archive/2026-07-09-row-marking-and-persistence/`. Lesson: —.
 - **S-03: user can set a repeat count on an element (e.g., ×3) and track each repetition with its own independent row progress; user can record the specific stitch position they stopped at within an in-progress row (e.g., "stopped at stitch 14").** — Archived 2026-08-20 → `context/archive/2026-08-01-repeats-and-stitch-position/`. Lesson: —.
