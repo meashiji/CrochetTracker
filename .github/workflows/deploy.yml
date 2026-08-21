@@ -61,9 +61,10 @@ jobs:
           --health-retries 5
     env:
       # conftest.py only setdefault()s DATABASE_URL, so this wins and points
-      # the suite at the service below. SECRET_KEY/MAIL_* dummies are required
-      # for app.config import; tests create tables via metadata, no migrations.
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/crochet_tracker_test
+      # the suite at the service below. The +asyncpg driver suffix is required:
+      # conftest builds its engine from this var raw, without app.config's
+      # postgresql:// -> postgresql+asyncpg:// rewrite.
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/crochet_tracker_test
       SECRET_KEY: ci-tests
       MAIL_USERNAME: ci
       MAIL_PASSWORD: ci
