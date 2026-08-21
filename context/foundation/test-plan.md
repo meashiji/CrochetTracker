@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-07-09 (Phase 2 complete — risks #3, #6 covered; #1 deferred, no implementing route)
+> Last updated: 2026-08-21 (Phase 2 complete — risks #3, #6 covered; risk #1 since covered by `tests/test_row_state_routes.py` shipped with S-02/S-03 — POST + DB-verify incl. persistence-across-reload; Phase 3 not started)
 
 ---
 
