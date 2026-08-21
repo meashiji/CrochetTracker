@@ -1,10 +1,10 @@
 ---
 change_id: auth-scaffold
 title: Auth scaffold
-status: implemented
+status: archived
 created: 2026-06-13
-updated: 2026-06-23
-archived_at: null
+updated: 2026-08-21
+archived_at: 2026-08-21T16:43:06Z
 ---
 
 ## Notes

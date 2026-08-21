@@ -190,6 +190,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 (Empty on first generation. `/10x-archive` appends here when a change matching a roadmap item is archived.)
 
 - **F-01: (foundation) SQLModel models (User, Project, Element, ElementRepetition, Row, RowState) defined; Alembic configured; DB connection wired to Fly Postgres via `DATABASE_URL`; migrations apply cleanly on deploy.** — Archived 2026-08-21 → `context/archive/2026-06-05-db-schema-and-models/`. Lesson: —.
+- **F-02: (foundation) user can sign up and sign in via email + password or magic link; an unauthenticated visitor is redirected to the sign-in screen; session middleware protects all project routes; every user sees only their own data.** — Archived 2026-08-21 → `context/archive/2026-06-13-auth-scaffold/`. Lesson: —.
 
 - **S-02: user can set a row to one of three states (not started / in-progress / done), toggle between them; on reopening the project, the view jumps to the first unmarked row and shows the exact previously-marked state — no manual save required.** — Archived 2026-08-01 → `context/archive/2026-07-09-row-marking-and-persistence/`. Lesson: —.
 - **S-03: user can set a repeat count on an element (e.g., ×3) and track each repetition with its own independent row progress; user can record the specific stitch position they stopped at within an in-progress row (e.g., "stopped at stitch 14").** — Archived 2026-08-20 → `context/archive/2026-08-01-repeats-and-stitch-position/`. Lesson: —.
