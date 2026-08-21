@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-08-21 (Phase 2 complete — risks #3, #6 covered; risk #1 since covered by `tests/test_row_state_routes.py` shipped with S-02/S-03 — POST + DB-verify incl. persistence-across-reload; Phase 3 not started)
+> Last updated: 2026-08-21 (Phase 3 complete — all six risks covered: #1 via `tests/test_row_state_routes.py` shipped with S-02/S-03, #5 via `migration-drift-check` CI gate in deploy.yml; rollout finished)
 
 ---
 
@@ -81,7 +81,7 @@ as artifacts appear on disk.
 |---|-----------|------|---------------|-----------|--------|---------------|
 | 1 | Auth-boundary integration tests | Prove route protection and session validation work; bootstrap test infrastructure (httpx TestClient, pytest fixtures, test DB) | #2, #4 | Integration (TestClient, pytest fixtures, separate test DB) | complete | context/changes/testing-auth-boundary/ |
 | 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection and DB write correctness for core user flows | #3, #6 (#1 deferred — no implementing route exists) | Integration (multi-user fixtures, TestClient POST + DB verify) | complete | context/changes/testing-write-path-ownership/ |
-| 3 | Migration drift quality gate | Name `alembic check` as a required CI gate and verify it catches real drift | #5 | CI gate naming (wiring deferred to Module 2 Lesson 5) | not started | — |
+| 3 | Migration drift quality gate | Name `alembic check` as a required CI gate and verify it catches real drift | #5 | CI gate naming (wiring deferred to Module 2 Lesson 5) | complete | — (done directly 2026-08-21, no change folder) |
 
 **Status vocabulary** (parser literals — do not rename):
 
@@ -121,7 +121,7 @@ as artifacts appear on disk.
 | Gate | Where | Required? | Catches |
 |------|-------|-----------|---------|
 | Unit + integration (pytest) | local + CI | required after §3 Phase 1 | Logic regressions, auth bypass, IDOR, write-path failures |
-| `alembic check` | local + CI | required after §3 Phase 3 | Migration drift between SQLModel models and DB schema |
+| `alembic check` | local + CI | **required** (§3 Phase 3 shipped 2026-08-21 — `migration-drift-check` job gates deploy) | Migration drift between SQLModel models and DB schema |
 | Lint | local + CI | planned | Syntactic drift (no tool configured yet) |
 | Typecheck | local + CI | planned | Type drift (no tool configured yet) |
 | Pre-prod smoke | between merge + prod | optional | Environment-specific failures on Fly |
@@ -238,7 +238,39 @@ row-mark feature) doesn't exist yet.
 
 ### 6.5 Checking migration drift
 
-TBD — see §3 Phase 3. (Phase 3 wires `alembic check`. This entry will document the exact command and what to do when it fails.)
+The gate is the `migration-drift-check` job in `.github/workflows/deploy.yml`; `deploy` declares
+`needs: migration-drift-check`, so drift on `main` blocks the Fly deploy (whose release command
+applies migrations). The job spins up a scratch Postgres service, applies every migration
+(`uv run alembic upgrade head`), then runs `uv run alembic check`, which exits non-zero when
+SQLModel metadata wants operations that no migration covers.
+
+**Run locally** (against a scratch DB — never the dev DB, it gets migrated to head):
+
+```bash
+createdb alembic_gate_scratch   # or: psql -c "CREATE DATABASE alembic_gate_scratch;"
+export DATABASE_URL="postgresql://crochet_tracker:dupa123@127.0.0.1:5433/alembic_gate_scratch" \
+       SECRET_KEY=x MAIL_USERNAME=x MAIL_PASSWORD=x MAIL_FROM=x@example.com
+uv run alembic upgrade head
+uv run alembic check            # "No new upgrade operations detected." = exit 0
+```
+
+(The `SECRET_KEY`/`MAIL_*` dummies are required because `alembic/env.py` imports `app.config`,
+which reads them at import time. `app.config` rewrites `postgresql://` → `postgresql+asyncpg://`
+itself, so a plain `postgresql://` URL is fine.)
+
+**When it fails** — output names the drift, e.g.
+`FAILED: New upgrade operations detected: [('add_column', None, 'project', Column(...))]`:
+
+1. Almost always: you changed a model and forgot the migration. Fix with
+   `uv run alembic revision --autogenerate -m "<what changed>"`, eyeball the generated ops
+   (autogenerate misses renames — it emits drop+add instead), then re-run the two commands above.
+2. If you believe the model is right and the diff is noise (e.g. server-default formatting),
+   do NOT silence the gate — reconcile the migration so metadata and DDL agree.
+3. Never "fix" a red gate by editing the model back unless the model change was accidental.
+
+Verified 2026-08-21: clean tree → exit 0; model field without migration → exit 255 naming the
+added column; revert → exit 0. CI service uses `postgres:16`; if Fly Postgres runs a different
+major version, bump the service image to match.
 
 ---
 

@@ -5,8 +5,46 @@ on:
     branches: [main]
 
 jobs:
+  migration-drift-check:
+    name: Migration drift check
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: crochet_tracker_check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # app.config requires these at import time; dummy values suffice for
+      # alembic upgrade/check (no mail is sent, no sessions are signed).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/crochet_tracker_check
+      SECRET_KEY: ci-migration-drift-check
+      MAIL_USERNAME: ci
+      MAIL_PASSWORD: ci
+      MAIL_FROM: ci@example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --frozen --no-dev
+      # A fresh database at head = "all migrations applied". `alembic check`
+      # then fails the job if SQLModel metadata wants anything more — i.e. a
+      # model changed without a migration.
+      - run: uv run alembic upgrade head
+      - run: uv run alembic check
+
   deploy:
     name: Deploy
+    needs: migration-drift-check
     runs-on: ubuntu-latest
     concurrency: deploy-group
     steps:
