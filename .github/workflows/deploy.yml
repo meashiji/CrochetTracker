@@ -42,9 +42,43 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run alembic check
 
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: crochet_tracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # conftest.py only setdefault()s DATABASE_URL, so this wins and points
+      # the suite at the service below. SECRET_KEY/MAIL_* dummies are required
+      # for app.config import; tests create tables via metadata, no migrations.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/crochet_tracker_test
+      SECRET_KEY: ci-tests
+      MAIL_USERNAME: ci
+      MAIL_PASSWORD: ci
+      MAIL_FROM: ci@example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+
   deploy:
     name: Deploy
-    needs: migration-drift-check
+    needs: [migration-drift-check, test]
     runs-on: ubuntu-latest
     concurrency: deploy-group
     steps:

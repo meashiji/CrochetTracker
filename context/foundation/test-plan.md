@@ -120,7 +120,7 @@ as artifacts appear on disk.
 
 | Gate | Where | Required? | Catches |
 |------|-------|-----------|---------|
-| Unit + integration (pytest) | local + CI | required after §3 Phase 1 | Logic regressions, auth bypass, IDOR, write-path failures |
+| Unit + integration (pytest) | local + CI | **required** (CI `test` job gates deploy since 2026-08-21) | Logic regressions, auth bypass, IDOR, write-path failures |
 | `alembic check` | local + CI | **required** (§3 Phase 3 shipped 2026-08-21 — `migration-drift-check` job gates deploy) | Migration drift between SQLModel models and DB schema |
 | Lint | local + CI | planned | Syntactic drift (no tool configured yet) |
 | Typecheck | local + CI | planned | Type drift (no tool configured yet) |
