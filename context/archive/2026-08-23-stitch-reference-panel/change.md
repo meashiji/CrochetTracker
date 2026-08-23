@@ -1,10 +1,10 @@
 ---
 change_id: stitch-reference-panel
 title: Stitch reference panel US notation
-status: in_progress
+status: archived
 created: 2026-08-21
 updated: 2026-08-23
-archived_at: null
+archived_at: 2026-08-23T13:00:00Z
 ---
 
 ## Notes
@@ -18,4 +18,4 @@ headless-browser smoke).
 2026-08-23 (UX revision): converted centered modal → non-modal popover
 anchored under the header button. No backdrop, no focus trap, fixed position
 stays visible while scrolling the pattern. Panel width ≤480px, 2-col grid
-(1-col ≤520px). Uncommitted.
+(1-col ≤520px).

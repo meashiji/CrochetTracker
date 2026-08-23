@@ -3,7 +3,7 @@ project: CrochetTracker
 version: 1
 status: draft
 created: 2026-06-05
-updated: 2026-08-21
+updated: 2026-08-23
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -36,7 +36,7 @@ This is the moment the product hypothesis is proven: the app reliably answers "w
 | S-01 | project-and-pattern-display  | create a project, paste a pattern, and see it as a list of rows   | F-01, F-02    | FR-001, FR-002, FR-004, FR-005, FR-008 | done     |
 | S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | done     |
 | S-03 | repeats-and-stitch-position  | track repeat elements independently; record stitch position        | S-02          | FR-003, FR-010                        | done     |
-| S-04 | stitch-reference-panel       | open a reference panel showing stitch codes and descriptions       | F-02          | FR-009                                | proposed |
+| S-04 | stitch-reference-panel       | open a reference panel showing stitch codes and descriptions       | F-02          | FR-009                                | done     |
 | P-01 | ui-polish                    | visual design pass — typography, colors, spacing, responsive       | S-02          | —                                     | proposed |
 
 ## Streams
@@ -141,7 +141,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Which stitch codes to include — US notation, UK notation, both? What is the source of the glossary content? Owner: user. Block: yes — content must be decided before this slice can be planned.
 - **Risk:** Low — this is a static reference panel with no data model dependencies. Blocked only by the content decision (Open Question 3).
-- **Status:** blocked
+- **Status:** done
 
 ### P-01: UI polish
 
@@ -195,3 +195,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **S-02: user can set a row to one of three states (not started / in-progress / done), toggle between them; on reopening the project, the view jumps to the first unmarked row and shows the exact previously-marked state — no manual save required.** — Archived 2026-08-01 → `context/archive/2026-07-09-row-marking-and-persistence/`. Lesson: —.
 - **S-03: user can set a repeat count on an element (e.g., ×3) and track each repetition with its own independent row progress; user can record the specific stitch position they stopped at within an in-progress row (e.g., "stopped at stitch 14").** — Archived 2026-08-20 → `context/archive/2026-08-01-repeats-and-stitch-position/`. Lesson: —.
+- **S-04: user can open a reference panel showing 8 basic crochet stitches in US notation with descriptions; the popover is anchored under the header button, stays fixed while scrolling the pattern, and is fully accessible without auth barriers.** — Archived 2026-08-23 → `context/archive/2026-08-23-stitch-reference-panel/`. Lesson: —.
