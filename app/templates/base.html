@@ -415,6 +415,8 @@
             <nav class="nav-links">
                 <a href="/">Overview</a>
                 <a href="/projects/">Projects</a>
+                <button type="button" id="stitch-reference-toggle" aria-expanded="false"
+                    aria-controls="stitch-panel">Stitch reference</button>
                 {% if user %}
                 <form action="/auth/logout" method="post" style="display:inline">
                     <button type="submit">Log out</button>
@@ -429,7 +431,9 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+    <div id="stitch-panel" hidden></div>
     <script src="/static/js/htmx.min.js"></script>
+    <script src="/static/js/stitch-panel.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 

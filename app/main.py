@@ -13,6 +13,7 @@ from app.models.project import Project
 from app.models.user import User
 from app.routes.auth import router as auth_router
 from app.routes.projects import router as projects_router
+from app.routes.stitches import router as stitches_router
 
 app = FastAPI(title="CrochetTracker")
 
@@ -30,6 +31,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 app.include_router(auth_router)
 app.include_router(projects_router)
+app.include_router(stitches_router)
 
 
 @app.exception_handler(Exception)

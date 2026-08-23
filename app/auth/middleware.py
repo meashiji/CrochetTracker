@@ -10,6 +10,8 @@ _PUBLIC_PATHS = {
     "/auth/signup",
     "/auth/magic-link",
     "/auth/magic-link/verify",
+    # Read-only stitch reference fragment, no user data.
+    "/stitches/panel",
 }
 
 

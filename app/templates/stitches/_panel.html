@@ -1,0 +1,15 @@
+<section class="stitch-panel" role="dialog" aria-label="Stitch reference, US notation">
+    <header class="stitch-panel-header">
+        <h2 class="stitch-panel-title">Stitch reference <span class="subtle">US notation</span></h2>
+        <button type="button" class="stitch-panel-close" aria-label="Close stitch reference">&times;</button>
+    </header>
+    <ul class="stitch-grid">
+        {% for stitch in stitches %}
+        <li class="stitch-entry">
+            <span class="stitch-symbol">{{ stitch.symbol }}</span>
+            <p class="stitch-name">{{ stitch.name }}</p>
+            <p class="stitch-description">{{ stitch.description }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
