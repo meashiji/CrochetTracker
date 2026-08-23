@@ -152,33 +152,33 @@ Wire the toggle into `base.html`, add the open/close JS behavior and styling.
 
 #### Automated
 
-- [x] 1.1 Define `Stitch` TypedDict + `STITCHES` constant (8 entries) in `app/stitches.py`
-- [x] 1.2 Create `app/routes/stitches.py` + `app/templates/stitches/_panel.html`; register router in `app/main.py`; add `/stitches/panel` to `_PUBLIC_PATHS`
-- [x] 1.3 New tests pass: `uv run pytest tests/test_stitch_reference.py -v` (5 passed)
-- [x] 1.4 Full suite still passes: `uv run pytest` (76 passed)
+- [x] 1.1 Define `Stitch` TypedDict + `STITCHES` constant (8 entries) in `app/stitches.py` — 05d4e7c
+- [x] 1.2 Create `app/routes/stitches.py` + `app/templates/stitches/_panel.html`; register router in `app/main.py`; add `/stitches/panel` to `_PUBLIC_PATHS` — 05d4e7c
+- [x] 1.3 New tests pass: `uv run pytest tests/test_stitch_reference.py -v` (5 passed) — 05d4e7c
+- [x] 1.4 Full suite still passes: `uv run pytest` (76 passed) — 05d4e7c
 
 #### Manual
 
-- [x] 1.5 `curl /stitches/panel` returns the fragment with all 8 stitches (no session)
+- [x] 1.5 `curl /stitches/panel` returns the fragment with all 8 stitches (no session) — 05d4e7c
 
 ### Phase 2: Header Integration & Polish
 
 #### Automated
 
-- [x] 2.1 Toggle button + container + script wired in `app/templates/base.html`
-- [x] 2.2 `app/static/js/stitch-panel.js`: load-once popover toggle + Escape/close + focus management + **positioning under trigger + fixed-on-scroll + resize reposition**
-- [x] 2.3 Responsive 2-col grid + fixed popover styles + caret in `app/static/styles.css` (no backdrop, no modal)
-- [x] 2.4 Full suite still passes: `uv run pytest` (76 passed)
+- [x] 2.1 Toggle button + container + script wired in `app/templates/base.html` — 05d4e7c
+- [x] 2.2 `app/static/js/stitch-panel.js`: load-once popover toggle + Escape/close + focus management + **positioning under trigger + fixed-on-scroll + resize reposition** — 05d4e7c
+- [x] 2.3 Responsive 2-col grid + fixed popover styles + caret in `app/static/styles.css` (no backdrop, no modal) — 05d4e7c
+- [x] 2.4 Full suite still passes: `uv run pytest` (76 passed) — 05d4e7c
 
 #### Manual
 
 > Verified via headless Chromium (Playwright) smoke run on a live `uvicorn` instance, not a human pass.
 
-- [x] 2.5 Open popover from header — all 8 stitches display correctly in 2-col grid
-- [x] 2.6 Navigate with keyboard (Escape); focus to close button on open
-- [x] 2.7 Mobile ≤520px → 1 column; desktop 2 columns; panel ≤480px wide
-- [x] 2.8 Panel closes on Escape/close button/toggle; reopens without reload (fragment fetched once); **stays fixed while page scrolls**; **outside click does NOT close** — pattern remains interactive
-- [x] 2.9 Button works on logged-out `/` page
+- [x] 2.5 Open popover from header — all 8 stitches display correctly in 2-col grid — 05d4e7c
+- [x] 2.6 Navigate with keyboard (Escape); focus to close button on open — 05d4e7c
+- [x] 2.7 Mobile ≤520px → 1 column; desktop 2 columns; panel ≤480px wide — 05d4e7c
+- [x] 2.8 Panel closes on Escape/close button/toggle; reopens without reload (fragment fetched once); **stays fixed while page scrolls**; **outside click does NOT close** — pattern remains interactive — 05d4e7c
+- [x] 2.9 Button works on logged-out `/` page — 05d4e7c
 
 ## References
 
