@@ -95,13 +95,13 @@
   --touch-target-min: 44px;
 
   /* Backward-compatible aliases for template <style> blocks (Phase 4 migration) */
-  --bg: var(--color-bg);
-  --surface: var(--color-surface);
-  --surface-strong: var(--color-surface-strong);
-  --text: var(--color-text);
-  --muted: var(--color-muted);
-  --accent: var(--color-accent);
-  --accent-strong: var(--color-accent-strong);
-  --accent-soft: var(--color-accent-soft);
-  --border: var(--color-border);
+  --bg: #fcf5f1;
+  --surface: #fffaf7;
+  --surface-strong: #fff1e9;
+  --text: #4f3040;
+  --muted: #7a5d63;
+  --accent: #c77b8f;
+  --accent-strong: #a44f62;
+  --accent-soft: #e9b79d;
+  --border: #ead4cd;
 }
