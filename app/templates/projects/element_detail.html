@@ -21,12 +21,19 @@
         color: var(--muted);
     }
 
+    /* Mobile-first: stacked; editor beside preview from --bp-md up. */
     .pattern-layout {
         display: grid;
-        grid-template-columns: minmax(280px, 480px) 1fr;
+        grid-template-columns: 1fr;
         gap: 24px;
         align-items: start;
         margin-top: 20px;
+    }
+
+    @media (min-width: 760px) {
+        .pattern-layout {
+            grid-template-columns: minmax(280px, 480px) 1fr;
+        }
     }
 
     /* Collapsed = pattern is the focus: stack full-width instead of sharing a row
@@ -43,12 +50,6 @@
 
     .pattern-layout form {
         max-width: 100%;
-    }
-
-    @media (max-width: 760px) {
-        .pattern-layout {
-            grid-template-columns: 1fr;
-        }
     }
 
     .editor-toggle {
@@ -338,7 +339,7 @@
             <input type="text" id="element-rename-input" name="name" value="{{ element.name or '' }}" maxlength="50" placeholder="Element name"
                 required>
             <button type="submit">Save name</button>
-            <button type="button" id="rename-cancel" class="btn btn-outline">Cancel</button>
+            <button type="button" id="rename-cancel" class="btn btn--outline">Cancel</button>
         </form>
 
         <button type="button" id="rename-toggle" class="icon-button {{ 'is-hidden' if rename_open else '' }}"

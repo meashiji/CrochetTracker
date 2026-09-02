@@ -146,7 +146,7 @@
                     <input type="text" id="element-rename-{{ element.id }}" name="name" value="{{ element.name or '' }}" maxlength="50"
                         placeholder="Element name" required{% if rename_error_element_id == element.id %} aria-describedby="element-rename-error-{{ element.id }}"{% endif %}>
                     <button type="submit">Save name</button>
-                    <button type="button" class="btn btn-outline element-rename-cancel">Cancel</button>
+                    <button type="button" class="btn btn--outline element-rename-cancel">Cancel</button>
                 </form>
 
                 <span class="subtle element-count {{ 'is-hidden' if rename_error_element_id == element.id else '' }}">

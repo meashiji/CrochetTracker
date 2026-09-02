@@ -386,7 +386,7 @@ Extract all template `<style>` blocks into `styles.css` (tokenized), remove inli
 - [x] 2.3 Full test suite passes: `uv run pytest -q` (76 passed) — 3f37aaa
 
 #### Manual
-- [ ] 2.4 **GATE 2**: Focus-ring works, Tab navigation, skip link, touch targets ≥44px, disabled states, form ARIA — **Your approval required**
+- [x] 2.4 **GATE 2**: Focus-ring works, Tab navigation, skip link, touch targets ≥44px, disabled states, form ARIA — approved by user 2026-09-02
 
 ### Phase 3: Responsive + CSS Architecture
 

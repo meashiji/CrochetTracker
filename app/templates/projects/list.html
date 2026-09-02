@@ -93,7 +93,7 @@
                     <input type="text" id="project-rename-{{ project.id }}" name="name" value="{{ project.name }}" maxlength="50"
                         placeholder="Project name" required>
                     <button type="submit">Save name</button>
-                    <button type="button" class="btn btn-outline project-rename-cancel">Cancel</button>
+                    <button type="button" class="btn btn--outline project-rename-cancel">Cancel</button>
                 </form>
 
                 <div class="project-actions {{ 'is-hidden' if rename_error_project_id == project.id else '' }}">
