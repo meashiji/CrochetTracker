@@ -391,9 +391,9 @@ Extract all template `<style>` blocks into `styles.css` (tokenized), remove inli
 ### Phase 3: Responsive + CSS Architecture
 
 #### Automated
-- [ ] 3.1 Mobile-first breakpoints using `--bp-*` tokens; remove old desktop-first queries
-- [ ] 3.2 Global overflow-x guard; verify touch targets on mobile
-- [ ] 3.3 Full test suite passes: `uv run pytest -q` (76 passed)
+- [x] 3.1 Mobile-first breakpoints using `--bp-*` tokens; remove old desktop-first queries — ca4e618 (literal bp values in `@media`; custom properties don't substitute there)
+- [x] 3.2 Global overflow-x guard; verify touch targets on mobile — ca4e618
+- [x] 3.3 Full test suite passes: `uv run pytest -q` (76 passed) — ca4e618 (77 passed)
 
 #### Manual
 - [ ] 3.4 **GATE 3**: Viewports 320→1440px work; no horizontal scroll; mobile layouts correct — **Your approval required**
