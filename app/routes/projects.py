@@ -857,6 +857,19 @@ async def element_update_repeat_count(
 
     # Bare URL, no ?rep= — a stale last-rep cookie is clamped on the next read
     # rather than 404ing the user out of their own page.
+    if request.headers.get("HX-Request"):
+        # HTMX request: swap just the stepper so the page (and its scroll
+        # position) stays put — a redirect would reload and re-run the
+        # auto-scroll to the current row. Re-fetch post-commit: the objects
+        # loaded above are expired and lazy loads would raise in async.
+        project, element = await _get_project_and_element(
+            project_id, element_id, user, session
+        )
+        return templates.TemplateResponse(
+            request,
+            "projects/_repeat_stepper.html",
+            {"project": project, "element": element, "has_rows": bool(rows)},
+        )
     return RedirectResponse(
         url=f"/projects/{project_id}/elements/{element_id}", status_code=303
     )

@@ -420,6 +420,28 @@ async def test_stepper_no_rows_element_changes_field_only(
     await db_session.commit()
 
 
+async def test_stepper_htmx_request_returns_fragment_not_redirect(
+    test_user, async_client, db_session, project_element_rows
+):
+    """htmx +/− click swaps only the stepper — a redirect would mean a full page
+    reload, which re-runs the auto-scroll jump to the current row."""
+    project, element, rows = project_element_rows
+
+    response = await async_client.post(
+        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        data={"repeat_count": 2},
+        headers={"HX-Request": "true"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 200
+    assert 'class="repeat-stepper"' in response.text
+    assert "×2" in response.text
+    assert "<html" not in response.text.lower()
+    await db_session.refresh(element)
+    assert element.repeat_count == 2
+
+
 async def test_stepper_other_user_sees_404(
     test_user, second_user, db_session, project_element_rows
 ):
