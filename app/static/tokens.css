@@ -58,6 +58,7 @@
   --color-on-surface: #4f3040;
   --color-on-background: #4f3040;
   --color-on-muted: #ffffff;
+  --color-on-accent: #ffffff;
   --color-white: #ffffff;
 
   /* Radius */
@@ -94,14 +95,32 @@
   /* Touch target */
   --touch-target-min: 44px;
 
-  /* Backward-compatible aliases for template <style> blocks (Phase 4 migration) */
-  --bg: #fcf5f1;
-  --surface: #fffaf7;
-  --surface-strong: #fff1e9;
-  --text: #4f3040;
-  --muted: #7a5d63;
-  --accent: #c77b8f;
-  --accent-strong: #a44f62;
-  --accent-soft: #e9b79d;
-  --border: #ead4cd;
+  /* Row state backgrounds */
+  --color-row-base: #f7f5f3;
+  --color-row-hover: #efece8;
+  --color-row-in-progress-bg: #fff8e1;
+  --color-row-in-progress-border: #f0c14b;
+  --color-row-done-bg: #e9f8ee;
+  --color-row-done-border: #86d9a6;
+
+  /* Row state foreground (semantic aliases) */
+  --color-state-done: var(--color-success);
+  --color-state-in-progress: #b45309;
+  --color-state-not-started: #9e9e9e;
+
+  /* Accent wash (repeating gradient for cards/symbols) */
+  --color-accent-wash-start: rgba(199, 123, 143, 0.16);
+  --color-accent-wash-end: rgba(233, 183, 157, 0.22);
+  --color-accent-wash-border: rgba(199, 123, 143, 0.18);
+
+  /* Surface overlays (glassmorphism over the page background) */
+  --color-surface-overlay: rgba(255, 250, 247, 0.95);
+  --color-surface-overlay-soft: rgba(255, 250, 247, 0.84);
+  --color-surface-overlay-card: rgba(255, 250, 247, 0.96);
+  --color-surface-overlay-card-end: rgba(255, 240, 232, 0.95);
+  --color-brand-highlight: rgba(255, 255, 255, 0.7);
+
+  /* Focus ring glows for row states */
+  --color-ring-accent: rgba(164, 79, 98, 0.25);
+  --color-ring-destructive: rgba(220, 38, 38, 0.25);
 }

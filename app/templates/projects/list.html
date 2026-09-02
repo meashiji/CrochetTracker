@@ -1,75 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-    .project-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .project-link {
-        flex: 1;
-    }
-
-    .project-actions {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    /* Hover has no touch equivalent — icons stay always-visible on touch devices
-       (base rule above) and only fade in on hover for mouse/trackpad input. */
-    @media (hover: hover) and (pointer: fine) {
-        .project-actions {
-            opacity: 0;
-            transition: opacity 0.15s ease;
-        }
-
-        .project-row:hover .project-actions,
-        .project-row:focus-within .project-actions {
-            opacity: 1;
-        }
-    }
-
-    .icon-button {
-        border: none;
-        background: none;
-        cursor: pointer;
-        font-size: 1.1rem;
-        line-height: 1;
-        padding: 4px;
-        color: var(--muted);
-    }
-
-    .icon-button:hover {
-        color: var(--accent-strong);
-    }
-
-    .delete-form {
-        display: inline-flex;
-        margin: 0;
-        max-width: none;
-    }
-
-    .project-rename-form {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-        max-width: 480px;
-        margin: 0;
-    }
-
-    .project-rename-form input {
-        flex: 1;
-        margin: 0;
-    }
-
-    .is-hidden {
-        display: none;
-    }
-</style>
 
 <section class="panel">
     <p class="eyebrow">Project board</p>
@@ -106,7 +37,7 @@
                 </div>
             </div>
             {% if rename_error_project_id == project.id %}
-            <p style="color: #a44f62; font-weight: 600">{{ rename_error }}</p>
+            <p class="error-message">{{ rename_error }}</p>
             {% endif %}
         </li>
         {% endfor %}

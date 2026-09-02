@@ -9,7 +9,7 @@
 body {
   margin: 0;
   font-family: var(--font-family-base);
-  background: linear-gradient(180deg, var(--color-bg) 0%, #f8ece8 100%);
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface-strong) 100%);
   color: var(--color-text);
   overflow-x: hidden;
 }
@@ -39,7 +39,7 @@ a:hover {
   justify-content: space-between;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
-  background: rgba(255, 250, 247, 0.95);
+  background: var(--color-surface-overlay);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-topbar);
   box-shadow: var(--shadow-3);
@@ -61,7 +61,7 @@ a:hover {
   place-items: center;
   border-radius: var(--radius-xl);
   background: linear-gradient(135deg, var(--color-accent-soft), var(--color-brand-accent));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 var(--color-brand-highlight);
 }
 
 .brand-mark svg {
@@ -75,7 +75,7 @@ a:hover {
 }
 
 .brand-tag {
-  margin: 2px 0 0;
+  margin: var(--space-1) 0 0;
   font-size: var(--font-size-caption);
   color: var(--color-muted);
   font-weight: var(--font-weight-medium);
@@ -100,6 +100,12 @@ a:hover {
 
 .nav-links button {
   cursor: pointer;
+}
+
+.logout-form {
+  display: inline;
+  margin: 0;
+  max-width: none;
 }
 
 .content {
@@ -129,11 +135,11 @@ a:hover {
 .auth-card,
 .auth-side {
   border-radius: var(--radius-3xl);
-  padding: 30px;
+  padding: var(--space-7);
 }
 
 .auth-card {
-  background: linear-gradient(135deg, rgba(255, 250, 247, 0.96), rgba(255, 240, 232, 0.95));
+  background: linear-gradient(135deg, var(--color-surface-overlay-card), var(--color-surface-overlay-card-end));
   border: 1px solid var(--color-border);
 }
 
@@ -157,8 +163,8 @@ a:hover {
 }
 
 .auth-side {
-  background: linear-gradient(135deg, rgba(199, 123, 143, 0.16), rgba(233, 183, 157, 0.23));
-  border: 1px solid rgba(199, 123, 143, 0.18);
+  background: linear-gradient(135deg, var(--color-accent-wash-start), var(--color-accent-wash-end));
+  border: 1px solid var(--color-accent-wash-border);
 }
 
 .auth-badge {
@@ -176,7 +182,7 @@ a:hover {
 
 .auth-form {
   display: grid;
-  gap: 14px;
+  gap: var(--space-3);
   max-width: 100%;
   margin-top: var(--space-5);
 }
@@ -217,12 +223,12 @@ a:hover {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-lg);
-  background: rgba(255, 250, 247, 0.84);
+  background: var(--color-surface-overlay-soft);
   color: var(--color-text);
 }
 
 .feature-list li::before {
-  content: "✿";
+  content: "\273F";
   color: var(--color-accent-strong);
   font-size: var(--font-size-small);
 }
@@ -270,15 +276,14 @@ h1 {
   margin-top: var(--space-5);
 }
 
-/* ── Buttons & Stats ──────────────────────────────── */
+/* ── Buttons ──────────────────────────────────────── */
 
-/* Button base */
 .btn {
   display: inline-block;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
-  color: var(--color-white);
+  color: var(--color-on-accent);
   font-weight: var(--font-weight-bold);
   border: 1px solid transparent;
   cursor: pointer;
@@ -291,7 +296,6 @@ h1 {
   text-decoration: none;
 }
 
-/* Button variants */
 .btn--outline {
   background: var(--color-surface-strong);
   color: var(--color-accent-strong);
@@ -318,150 +322,61 @@ h1 {
   color: var(--color-accent-strong);
 }
 
-/* Submit buttons — unify with .btn */
 button[type="submit"] {
   display: inline-block;
+  width: fit-content;
   padding: var(--space-2) var(--space-4);
+  border: none;
   border-radius: var(--radius-pill);
   background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
-  color: var(--color-white);
+  color: var(--color-on-accent);
   font-weight: var(--font-weight-bold);
-  border: none;
   cursor: pointer;
   line-height: var(--line-height-normal);
 }
 
-/* Disabled states */
-.btn:disabled,
-.btn[aria-disabled="true"],
-button:disabled,
-button[aria-disabled="true"],
-input:disabled,
-input[aria-disabled="true"],
-select:disabled,
-select[aria-disabled="true"],
-textarea:disabled,
-textarea[aria-disabled="true"] {
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
+/* ── Forms ────────────────────────────────────────── */
+
+form {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 480px;
 }
 
-/* Global focus ring */
-:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
+label {
+  font-weight: var(--font-weight-semibold);
 }
 
-/* Global touch target minimum */
-button,
-a[role="button"],
-input,
-select,
-textarea,
-[tabindex="0"] {
-  min-height: var(--touch-target-min);
-  min-width: var(--touch-target-min);
+input {
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-3) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
 }
 
-/* Icon buttons — exempt from full touch target (compact controls) */
-.btn--icon,
-.repeat-stepper button[type="submit"],
-.stitch-panel-close {
-  min-height: var(--touch-target-min);
-  min-width: var(--touch-target-min);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+textarea {
+  width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-3) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-small);
+  resize: vertical;
 }
 
-/* Skip link */
-.skip-link {
-  position: fixed;
-  top: var(--space-4);
-  left: var(--space-4);
-  z-index: 100;
-  padding: var(--space-3) var(--space-5);
-  background: var(--color-accent-strong);
-  color: var(--color-white);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-3);
-  text-decoration: none;
-  transform: translateY(-200%);
-  transition: transform 0.15s ease;
-}
-
-.skip-link:focus {
-  transform: translateY(0);
-}
-
-/* ── Stats (non-button) ──────────────────────────── */
-
-/* ── Accessibility: focus-ring, disabled, touch targets, skip link ── */
-
-/* Global focus ring */
-:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-
-/* Disabled states */
-.btn:disabled,
-.btn[aria-disabled="true"],
-button:disabled,
-button[aria-disabled="true"],
-input:disabled,
-input[aria-disabled="true"],
-select:disabled,
-select[aria-disabled="true"],
-textarea:disabled,
-textarea[aria-disabled="true"],
-a[aria-disabled="true"] {
-  opacity: 0.6;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-/* Global touch target minimum */
-button,
-a[role="button"],
-input,
-select,
-textarea,
-[tabindex="0"] {
-  min-height: var(--touch-target-min);
-  min-width: var(--touch-target-min);
-}
-
-/* Skip link */
-.skip-link {
-  position: fixed;
-  top: var(--space-4);
-  left: var(--space-4);
-  z-index: 100;
-  padding: var(--space-3) var(--space-5);
-  background: var(--color-accent-strong);
-  color: var(--color-white);
-  font-weight: var(--font-weight-bold);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-3);
-  text-decoration: none;
-  transform: translateY(-200%);
-  transition: transform 0.15s ease;
-}
-
-.skip-link:focus {
-  transform: translateY(0);
-}
-
-/* ── Stats ─────────────────────────────────────────── */
+/* ── Stats ────────────────────────────────────────── */
 
 .stat-card {
-  padding: 18px;
+  padding: var(--space-5);
   border-radius: var(--space-4);
-  background: linear-gradient(135deg, rgba(199, 123, 143, 0.16), rgba(233, 183, 157, 0.22));
-  border: 1px solid rgba(199, 123, 143, 0.18);
+  background: linear-gradient(135deg, var(--color-accent-wash-start), var(--color-accent-wash-end));
+  border: 1px solid var(--color-accent-wash-border);
 }
 
 .stat-card h2 {
@@ -503,43 +418,461 @@ textarea,
 }
 
 .project-item {
-  padding: 14px var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   background: var(--color-surface-strong);
 }
 
-/* ── Forms ────────────────────────────────────────── */
+/* Project list (projects/list.html) */
 
-form {
-  display: grid;
+.project-row {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
-  max-width: 480px;
 }
 
-label {
+.project-link {
+  flex: 1;
+}
+
+.project-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Hover has no touch equivalent — icons stay always-visible on touch devices
+   (base rule above) and only fade in on hover for mouse/trackpad input. */
+@media (hover: hover) and (pointer: fine) {
+  .project-actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .project-row:hover .project-actions,
+  .project-row:focus-within .project-actions {
+    opacity: 1;
+  }
+}
+
+.project-rename-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  max-width: 480px;
+  margin: 0;
+}
+
+.project-rename-form input {
+  flex: 1;
+  margin: 0;
+}
+
+/* ── Icon buttons ─────────────────────────────────── */
+
+.icon-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: var(--space-1);
+  color: var(--color-muted);
+}
+
+.icon-button:hover {
+  color: var(--color-accent-strong);
+}
+
+/* ── Delete form ──────────────────────────────────── */
+
+.delete-form {
+  display: inline-flex;
+  margin: 0;
+  max-width: none;
+}
+
+.delete-form.is-hidden {
+  display: none;
+}
+
+.delete-form button[type="submit"] {
+  padding: var(--space-1);
+  border-radius: 0;
+  background: none;
+  color: var(--color-muted);
+  font-weight: var(--font-weight-normal);
+  line-height: 1;
+}
+
+.delete-form button[type="submit"]:hover {
+  color: var(--color-accent-strong);
+}
+
+/* ── Hidden utility ───────────────────────────────── */
+
+.is-hidden {
+  display: none;
+}
+
+/* ── Element detail (element_detail.html) ─────────── */
+
+.breadcrumb {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-small-xs);
+  color: var(--color-muted);
+}
+
+/* Mobile-first: stacked; editor beside preview from --bp-md up. */
+.pattern-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  align-items: start;
+  margin-top: var(--space-5);
+}
+
+.pattern-layout.pattern-layout--editor-collapsed {
+  grid-template-columns: 1fr;
+}
+
+.pattern-layout--editor-collapsed .pattern-preview {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.pattern-layout form {
+  max-width: 100%;
+}
+
+.editor-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+  border: none;
+  background: none;
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.editor-toggle-icon {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.editor-toggle[aria-expanded="true"] .editor-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.editor-collapsible {
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.editor-collapsible.is-collapsed {
+  max-height: 0;
+}
+
+.editor-collapsible.is-expanded {
+  max-height: none;
+}
+
+/* ── Row list ─────────────────────────────────────── */
+
+.row-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.row-item form {
+  margin: 0;
+  max-width: 100%;
+  display: block;
+}
+
+.row-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.row-item .row-toggle {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-stitch {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-small-xs);
+  color: var(--color-muted);
+}
+
+.row-stitch input {
+  width: 72px;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font: inherit;
+}
+
+/* Row toggle button */
+.row-list .row-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-row-base);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-normal);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.row-list .row-toggle:hover {
+  background: var(--color-row-hover);
+}
+
+/* Row state: dot color */
+.row-dot {
+  color: var(--color-state-not-started);
+  flex-shrink: 0;
+  font-size: 1.05rem;
+}
+
+/* Row state: in progress */
+.row-item--in_progress .row-toggle {
+  background: var(--color-row-in-progress-bg);
+  border-color: var(--color-row-in-progress-border);
+}
+
+.row-item--in_progress .row-dot {
+  color: var(--color-state-in-progress);
+}
+
+/* Row state: done */
+.row-item--done .row-toggle {
+  background: var(--color-row-done-bg);
+  border-color: var(--color-row-done-border);
+  text-decoration: line-through;
+  color: var(--color-muted);
+}
+
+.row-item--done .row-dot {
+  color: var(--color-state-done);
+  text-decoration: none;
+}
+
+/* Row state: current (focused) */
+.row-item--current .row-toggle {
+  border-color: var(--color-accent-strong);
+  box-shadow: 0 0 0 2px var(--color-ring-accent);
+}
+
+/* Row state: error */
+.row-item--error .row-toggle {
+  border-color: var(--color-destructive);
+  box-shadow: 0 0 0 2px var(--color-ring-destructive);
+}
+
+/* ── Element title row ────────────────────────────── */
+
+.element-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.element-title-row h1 {
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.element-title-row:hover h1,
+.element-title-row:focus-within h1 {
+  border-color: var(--color-border);
+  background: var(--color-surface-strong);
+}
+
+/* Element title icon buttons (appear on hover/focus-within) */
+.element-title-row .icon-button {
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.element-title-row:hover .icon-button,
+.element-title-row:focus-within .icon-button {
+  opacity: 1;
+}
+
+/* ── Rename form ──────────────────────────────────── */
+
+.rename-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  max-width: 480px;
+  margin: 0;
+}
+
+.rename-form input {
+  flex: 1;
+  margin: 0;
+}
+
+/* ── Repeat stepper ───────────────────────────────── */
+
+.repeat-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+/* Out-specifies base.html's global `form` grid and `button[type="submit"]`
+   pink-pill styles — the stepper is a compact inline control. */
+.repeat-stepper form {
+  display: block;
+  margin: 0;
+  max-width: none;
+}
+
+.repeat-stepper button[type="submit"] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-strong);
+  color: var(--color-accent-strong);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.repeat-stepper button[type="submit"]:hover {
+  border-color: var(--color-accent-strong);
+}
+
+.repeat-stepper-count {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-muted);
+}
+
+/* ── Rep pills ────────────────────────────────────── */
+
+.rep-pills {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.rep-pill {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-strong);
+  color: var(--color-text);
+  font-size: var(--font-size-small-xs);
   font-weight: var(--font-weight-semibold);
 }
 
-input {
-  width: 100%;
-  margin-top: var(--space-1);
-  padding: 12px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-subtle);
-  color: var(--color-text);
+.rep-pill:hover {
+  text-decoration: none;
+  border-color: var(--color-accent-strong);
 }
 
-button[type="submit"] {
-  width: fit-content;
-  padding: var(--space-2) var(--space-4);
-  border: none;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
-  color: var(--color-white);
-  font-weight: var(--font-weight-bold);
-  cursor: pointer;
+.rep-pill--active {
+  background: var(--color-accent-strong);
+  border-color: var(--color-accent-strong);
+  color: var(--color-on-accent);
+}
+
+/* ── Element list (detail.html) ───────────────────── */
+
+.element-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.element-link {
+  flex: 1;
+}
+
+.element-count {
+  flex-shrink: 0;
+}
+
+.repeat-badge {
+  margin-right: var(--space-1);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent-strong);
+}
+
+.state-breakdown {
+  display: inline-flex;
+  gap: var(--space-2);
+  margin-left: var(--space-2);
+  font-size: var(--font-size-small-xs);
+}
+
+.state-chip--done {
+  color: var(--color-state-done);
+}
+
+.state-chip--in_progress {
+  color: var(--color-state-in-progress);
+}
+
+.state-chip--not_started {
+  color: var(--color-state-not-started);
+}
+
+/* Error message (inline in templates) */
+.error-message {
+  color: var(--color-accent-strong);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Form-level error/success (destructive/success with live-region semantics) */
+.form-error {
+  color: var(--color-destructive);
+  font-weight: var(--font-weight-semibold);
+}
+
+.form-success {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Error text standalone (breadcrumb-style link context) */
+.form-error-strong {
+  color: var(--color-destructive);
+  font-weight: var(--font-weight-semibold);
 }
 
 /* ── Stitch Panel ─────────────────────────────────── */
@@ -575,7 +908,7 @@ button[type="submit"] {
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3);
 }
 
 .stitch-panel-title {
@@ -617,7 +950,7 @@ button[type="submit"] {
   display: grid;
   gap: var(--space-1);
   align-content: start;
-  padding: 14px;
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   background: var(--color-surface-strong);
@@ -627,8 +960,8 @@ button[type="submit"] {
   width: fit-content;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, rgba(199, 123, 143, 0.16), rgba(233, 183, 157, 0.22));
-  border: 1px solid rgba(199, 123, 143, 0.18);
+  background: linear-gradient(135deg, var(--color-accent-wash-start), var(--color-accent-wash-end));
+  border: 1px solid var(--color-accent-wash-border);
   color: var(--color-accent-strong);
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-small);
@@ -645,6 +978,74 @@ button[type="submit"] {
   color: var(--color-muted);
   font-size: var(--font-size-small);
   line-height: var(--line-height-normal);
+}
+
+/* ── Accessibility ────────────────────────────────── */
+
+/* Global focus ring */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Disabled states */
+.btn:disabled,
+.btn[aria-disabled="true"],
+button:disabled,
+button[aria-disabled="true"],
+input:disabled,
+input[aria-disabled="true"],
+select:disabled,
+select[aria-disabled="true"],
+textarea:disabled,
+textarea[aria-disabled="true"],
+a[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Global touch target minimum */
+button,
+a[role="button"],
+input,
+select,
+textarea,
+[tabindex="0"] {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+/* Icon buttons — exempt from full touch target (compact controls) */
+.btn--icon,
+.repeat-stepper button[type="submit"],
+.stitch-panel-close {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 100;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-accent-strong);
+  color: var(--color-on-accent);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 /* ── Responsive (mobile-first) ────────────────────── */
@@ -672,5 +1073,9 @@ button[type="submit"] {
 
   .auth-layout {
     grid-template-columns: 1.05fr 0.95fr;
+  }
+
+  .pattern-layout {
+    grid-template-columns: minmax(280px, 480px) 1fr;
   }
 }
