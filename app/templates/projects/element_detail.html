@@ -253,6 +253,33 @@
         margin: 0;
     }
 
+    /* Out-specifies the global `form` grid so the delete icon sits inline with
+       the pencil; .is-hidden alone would lose to it on specificity ties. */
+    .delete-form {
+        display: inline-flex;
+        margin: 0;
+        max-width: none;
+    }
+
+    .delete-form.is-hidden {
+        display: none;
+    }
+
+    /* The global pink-pill button[type="submit"] out-specifics .icon-button
+       (0,1,1 vs 0,1,0) — reset the delete button back to a bare icon. */
+    .delete-form button[type="submit"] {
+        padding: 4px;
+        border-radius: 0;
+        background: none;
+        color: var(--muted);
+        font-weight: 400;
+        line-height: 1;
+    }
+
+    .delete-form button[type="submit"]:hover {
+        color: var(--accent-strong);
+    }
+
     .is-hidden {
         display: none;
     }
@@ -345,6 +372,12 @@
         <button type="button" id="rename-toggle" class="icon-button {{ 'is-hidden' if rename_open else '' }}"
             aria-label="Rename element" aria-expanded="{{ 'true' if rename_open else 'false' }}">✏️</button>
 
+        <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/delete"
+            id="delete-form" class="delete-form {{ 'is-hidden' if rename_open else '' }}"
+            data-element-name="{{ element.name or 'Unnamed element' }}">
+            <button type="submit" class="icon-button" aria-label="Delete element">🗑️</button>
+        </form>
+
         <div class="repeat-stepper" aria-label="Repeat count">
             {% if element.repeat_count > 1 %}
             <form hx-post="/projects/{{ project.id }}/elements/{{ element.id }}/repeat-count"
@@ -396,13 +429,11 @@
 
         <div class="pattern-preview">
             {% if rows %}
-            {% if element.repeat_count > 1 %}
-            <nav class="rep-pills" aria-label="Repetitions">
+            <nav id="rep-pills" class="rep-pills {{ '' if element.repeat_count > 1 else 'is-hidden' }}" aria-label="Repetitions">
                 {% for n in rep_numbers %}
                 <a href="?rep={{ n }}" class="rep-pill{{ ' rep-pill--active' if n == rep_number }}">Rep {{ n }}</a>
                 {% endfor %}
             </nav>
-            {% endif %}
             <ul class="row-list">
                 {% for row in rows %}
                 {% include "projects/_row.html" with context %}
@@ -473,6 +504,22 @@
         if (cancel) {
             cancel.addEventListener("click", close);
         }
+    })();
+
+    (function () {
+        var form = document.getElementById("delete-form");
+        if (!form) return;
+
+        // Reads the element name from a data-attribute rather than inlining it
+        // into the onsubmit string — a name with an apostrophe would otherwise
+        // break out of the JS string and silently skip the confirmation.
+        form.addEventListener("submit", function (e) {
+            var name = form.dataset.elementName || "this element";
+            var ok = confirm(
+                "Delete \"" + name + "\"? This cannot be undone — all rows and progress will be lost."
+            );
+            if (!ok) e.preventDefault();
+        });
     })();
 </script>
 {% endblock %}

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import delete, func, insert, select
 from sqlalchemy.exc import IntegrityError
@@ -385,10 +385,7 @@ async def _render_project_detail(
     session: AsyncSession,
     **extra_context,
 ):
-    """Fetch a project's elements + row counts and render the project detail page.
-
-    Shared by the GET route and the elements-list rename route's error re-render.
-    """
+    """Fetch a project's elements + row counts and render the project detail page."""
     result = await session.execute(
         select(Element)
         .where(Element.project_id == project.id)
@@ -430,8 +427,6 @@ async def _render_project_detail(
         "user": user,
         "project": project,
         "elements_with_counts": elements_with_counts,
-        "rename_error": None,
-        "rename_error_element_id": None,
     }
     context.update(extra_context)
     return templates.TemplateResponse(request, "projects/detail.html", context)
@@ -582,14 +577,10 @@ async def element_rename(
     project_id: int,
     element_id: int,
     name: str = Form(...),
-    return_to: str = Form(default="detail"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    """Rename an element. `return_to` distinguishes the two places this form can be
-    submitted from: the element's own detail page ("detail", the default) or the
-    project's elements list ("list") — each stays on its own page afterward.
-    """
+    """Rename an element from its own detail page."""
     project, element = await _get_project_and_element(
         project_id, element_id, user, session
     )
@@ -601,15 +592,6 @@ async def element_rename(
         error = "Element name must be 50 characters or fewer."
 
     if error:
-        if return_to == "list":
-            return await _render_project_detail(
-                request,
-                user,
-                project,
-                session,
-                rename_error=error,
-                rename_error_element_id=element.id,
-            )
         return await _render_element_detail(
             request,
             user,
@@ -628,8 +610,6 @@ async def element_rename(
     # Commit before redirect so the follow-up GET sees the new name.
     await session.commit()
 
-    if return_to == "list":
-        return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
     return RedirectResponse(
         url=f"/projects/{project_id}/elements/{element_id}", status_code=303
     )
@@ -664,7 +644,14 @@ async def element_delete(
 
     await session.commit()
 
-    return RedirectResponse(url=f"/projects/{project_id}", status_code=303)
+    response = RedirectResponse(url=f"/projects/{project_id}", status_code=303)
+    response.set_cookie(
+        f"last_rep_{element.id}",
+        "",
+        max_age=0,
+        samesite="lax",
+    )
+    return response
 
 
 @router.post("/{project_id}/elements/{element_id}")
@@ -858,17 +845,45 @@ async def element_update_repeat_count(
     # Bare URL, no ?rep= — a stale last-rep cookie is clamped on the next read
     # rather than 404ing the user out of their own page.
     if request.headers.get("HX-Request"):
-        # HTMX request: swap just the stepper so the page (and its scroll
-        # position) stays put — a redirect would reload and re-run the
-        # auto-scroll to the current row. Re-fetch post-commit: the objects
-        # loaded above are expired and lazy loads would raise in async.
+        # HTMX request: swap just the stepper (the rep pills come along via an
+        # out-of-band swap) so the page and its scroll position stay put — a
+        # redirect would reload and re-run the auto-scroll to the current row.
+        # Re-fetch post-commit: the objects loaded above are expired and lazy
+        # loads would raise in async.
         project, element = await _get_project_and_element(
             project_id, element_id, user, session
         )
+        if rows:
+            cookie_value = request.cookies.get(f"last_rep_{element.id}")
+            try:
+                pinned_rep = int(cookie_value) if cookie_value is not None else 1
+            except ValueError:
+                pinned_rep = 1
+            if pinned_rep > element.repeat_count:
+                # The rep currently on screen was just pruned — swapping only
+                # the stepper+pills would leave a stale row list up, so make
+                # the client reload the whole page.  Use HX-Redirect (not
+                # HX-Refresh) to land on the bare element URL without ?rep=;
+                # the stale cookie will be silently clamped by
+                # _resolve_requested_rep instead of 404ing on an out-of-range
+                # explicit query param.
+                return Response(
+                    status_code=200,
+                    headers={
+                        "HX-Redirect": f"/projects/{project_id}/elements/{element_id}"
+                    },
+                )
+        rep_number, _ = _resolve_requested_rep(request, element)
         return templates.TemplateResponse(
             request,
             "projects/_repeat_stepper.html",
-            {"project": project, "element": element, "has_rows": bool(rows)},
+            {
+                "project": project,
+                "element": element,
+                "has_rows": bool(rows),
+                "rep_number": rep_number,
+                "rep_numbers": range(1, element.repeat_count + 1),
+            },
         )
     return RedirectResponse(
         url=f"/projects/{project_id}/elements/{element_id}", status_code=303

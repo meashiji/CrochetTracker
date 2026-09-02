@@ -19,3 +19,11 @@
     </form>
     {% endif %}
 </div>
+
+<!-- Out-of-band: rep pills — swapped into #rep-pills in the element detail page -->
+<nav id="rep-pills" class="rep-pills {{ '' if element.repeat_count > 1 else 'is-hidden' }}"
+    aria-label="Repetitions" hx-swap-oob="outerHTML">
+    {% for n in rep_numbers %}
+    <a href="?rep={{ n }}" class="rep-pill{{ ' rep-pill--active' if n == rep_number }}">Rep {{ n }}</a>
+    {% endfor %}
+</nav>

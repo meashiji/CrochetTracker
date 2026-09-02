@@ -5,61 +5,6 @@ from app.models.progress import RowState
 from app.models.project import Element, ElementRepetition, Project
 
 
-async def test_rename_from_list_redirects_to_project_detail(
-    test_user, async_client, db_session
-):
-    project = Project(user_id=test_user.id, name="Sunset shawl")
-    db_session.add(project)
-    await db_session.commit()
-
-    element = Element(project_id=project.id, name="Body", repeat_count=1)
-    db_session.add(element)
-    await db_session.commit()
-
-    response = await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rename",
-        data={"name": "Sleeve", "return_to": "list"},
-        follow_redirects=False,
-    )
-
-    assert response.status_code == 303
-    assert response.headers["location"] == f"/projects/{project.id}"
-
-    follow_up = await async_client.get(
-        response.headers["location"], follow_redirects=False
-    )
-    assert follow_up.status_code == 200
-    assert "Sleeve" in follow_up.text
-
-    await db_session.execute(delete(Element).where(Element.id == element.id))
-    await db_session.commit()
-
-
-async def test_rename_from_list_blank_name_rerenders_project_detail(
-    test_user, async_client, db_session
-):
-    project = Project(user_id=test_user.id, name="Sunset shawl")
-    db_session.add(project)
-    await db_session.commit()
-
-    element = Element(project_id=project.id, name="Body", repeat_count=1)
-    db_session.add(element)
-    await db_session.commit()
-
-    response = await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/rename",
-        data={"name": "   ", "return_to": "list"},
-        follow_redirects=False,
-    )
-
-    assert response.status_code == 200
-    assert "Element name is required." in response.text
-    assert project.name in response.text
-
-    await db_session.execute(delete(Element).where(Element.id == element.id))
-    await db_session.commit()
-
-
 async def test_delete_removes_element_and_redirects_to_project_detail(
     test_user, async_client, db_session
 ):
