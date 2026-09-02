@@ -401,10 +401,10 @@ Extract all template `<style>` blocks into `styles.css` (tokenized), remove inli
 ### Phase 4: Page Audit & Migration
 
 #### Automated
-- [ ] 4.1 Extract template `<style>` blocks into `styles.css` (tokenized); unify conflicting selectors; remove 11 inline `style=""` attributes
-- [ ] 4.2 Migrate all 16 templates to token/component classes; complete ARIA
-- [ ] 4.3 Remove unused legacy CSS; verify token-only usage; no `<style>` blocks remain
-- [ ] 4.4 Full test suite passes: `uv run pytest -q` (76 passed)
+- [x] 4.1 Extract template `<style>` blocks into `styles.css` (tokenized); unify conflicting selectors; remove 11 inline `style=""` attributes — 08583d9
+- [x] 4.2 Migrate all 16 templates to token/component classes; complete ARIA — 08583d9
+- [x] 4.3 Remove unused legacy CSS; verify token-only usage; no `<style>` blocks remain — 08583d9
+- [x] 4.4 Full test suite passes: `uv run pytest -q` (75 passed) — 08583d9
 
 #### Manual
 - [ ] 4.5 **GATE 4**: All pages consistent, contrast OK, stitch panel works, performance clean — **Your final approval required**
