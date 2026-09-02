@@ -13,8 +13,8 @@
         <span class="row-dot">{{ glyph }}</span>{{ row.content }}
     </button>
     {% if state.value == "in_progress" %}
-    <label class="row-stitch">stitch
-        <input type="text" name="stitch_position" inputmode="numeric" pattern="[0-9]*" value="{{ row_state.stitch_position or '' }}"
+    <label for="stitch-{{ row.id }}" class="row-stitch">stitch
+        <input type="text" id="stitch-{{ row.id }}" name="stitch_position" inputmode="numeric" pattern="[0-9]*" value="{{ row_state.stitch_position or '' }}"
             hx-post="/projects/{{ project.id }}/elements/{{ element.id }}/reps/{{ rep_number }}/rows/{{ row.id }}/stitch"
             hx-trigger="change"
             hx-target="closest li"

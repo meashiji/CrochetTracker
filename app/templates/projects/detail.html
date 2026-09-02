@@ -142,8 +142,9 @@
                 <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/rename"
                     class="element-rename-form {{ '' if rename_error_element_id == element.id else 'is-hidden' }}">
                     <input type="hidden" name="return_to" value="list">
-                    <input type="text" name="name" value="{{ element.name or '' }}" maxlength="50"
-                        placeholder="Element name" required>
+                    <label for="element-rename-{{ element.id }}" class="sr-only">Element name</label>
+                    <input type="text" id="element-rename-{{ element.id }}" name="name" value="{{ element.name or '' }}" maxlength="50"
+                        placeholder="Element name" required{% if rename_error_element_id == element.id %} aria-describedby="element-rename-error-{{ element.id }}"{% endif %}>
                     <button type="submit">Save name</button>
                     <button type="button" class="btn btn-outline element-rename-cancel">Cancel</button>
                 </form>

@@ -89,7 +89,8 @@
 
                 <form method="post" action="/projects/{{ project.id }}/rename"
                     class="project-rename-form {{ '' if rename_error_project_id == project.id else 'is-hidden' }}">
-                    <input type="text" name="name" value="{{ project.name }}" maxlength="50"
+                    <label for="project-rename-{{ project.id }}" class="sr-only">Project name</label>
+                    <input type="text" id="project-rename-{{ project.id }}" name="name" value="{{ project.name }}" maxlength="50"
                         placeholder="Project name" required>
                     <button type="submit">Save name</button>
                     <button type="button" class="btn btn-outline project-rename-cancel">Cancel</button>

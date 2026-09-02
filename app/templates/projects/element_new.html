@@ -6,11 +6,11 @@
     <h1>Add an element to {{ project.name }}</h1>
     <p class="lead">Elements group rows of a pattern — like a sleeve, body, or motif.</p>
 
-    {% if error %}<p style="color: #a44f62">{{ error }}</p>{% endif %}
+    {% if error %}<p id="new-element-error" class="auth-error" aria-live="polite" style="color: var(--color-destructive)">{{ error }}</p>{% endif %}
 
     <form method="post" action="/projects/{{ project.id }}/elements/new">
-        <label>Element name
-            <input name="name" required autofocus maxlength="50" placeholder="e.g. Body, Sleeves">
+        <label for="new-element-name">Element name
+            <input id="new-element-name" name="name" required autofocus maxlength="50" placeholder="e.g. Body, Sleeves"{% if error %} aria-describedby="new-element-error"{% endif %}>
         </label>
         <button type="submit">Add element</button>
     </form>

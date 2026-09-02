@@ -8,15 +8,15 @@
         <p class="lead">Pick up your current project and keep every pattern, yarn note, and next step in one calm workspace.</p>
 
         {% if error %}
-            <p class="auth-error">{{ error }}</p>
+            <p id="login-error" class="auth-error" aria-live="polite">{{ error }}</p>
         {% endif %}
 
         <form class="auth-form" action="/auth/login" method="post">
-            <label>Email
-                <input type="email" name="email" required>
+            <label for="login-email">Email
+                <input type="email" id="login-email" name="email" required>
             </label>
-            <label>Password
-                <input type="password" name="password" required>
+            <label for="login-password">Password
+                <input type="password" id="login-password" name="password" required>
             </label>
             <button type="submit">Log in</button>
         </form>

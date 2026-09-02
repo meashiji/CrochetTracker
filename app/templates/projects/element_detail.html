@@ -334,7 +334,8 @@
 
         <form method="post" action="/projects/{{ project.id }}/elements/{{ element.id }}/rename" id="rename-form"
             class="rename-form {{ '' if rename_open else 'is-hidden' }}">
-            <input type="text" name="name" value="{{ element.name or '' }}" maxlength="50" placeholder="Element name"
+            <label for="element-rename-input" class="sr-only">Element name</label>
+            <input type="text" id="element-rename-input" name="name" value="{{ element.name or '' }}" maxlength="50" placeholder="Element name"
                 required>
             <button type="submit">Save name</button>
             <button type="button" id="rename-cancel" class="btn btn-outline">Cancel</button>
@@ -363,11 +364,11 @@
         </div>
     </div>
 
-    {% if rename_error %}<p style="color: #a44f62; font-weight: 600">{{ rename_error }}</p>{% endif %}
+            {% if error %}<p id="element-error" style="color: var(--color-destructive); font-weight: 600" aria-live="polite">{{ error }}</p>{% endif %}
 
-    {% if repeat_error %}<p style="color: #a44f62; font-weight: 600">{{ repeat_error }}</p>{% endif %}
+            {% if rename_error %}<p id="element-rename-error" style="color: var(--color-destructive); font-weight: 600" aria-live="polite">{{ rename_error }}</p>{% endif %}
 
-    {% if error %}<p style="color: #a44f62; font-weight: 600">{{ error }}</p>{% endif %}
+            {% if repeat_error %}<p id="element-repeat-error" style="color: var(--color-destructive); font-weight: 600" aria-live="polite">{{ repeat_error }}</p>{% endif %}
 
     <p class="lead">Write or paste your pattern and start tracking the progress!</p>
 
@@ -379,13 +380,13 @@
             </button>
             <div class="editor-collapsible {{ 'is-collapsed' if has_rows else 'is-expanded' }}"
                 id="editor-collapsible">
-                <form method="post"
-                    {% if has_rows %}onsubmit="return confirm('Saving a new pattern will reset all row progress for this element. Continue?');"{% endif %}>
-                    <label>Pattern text
-                        <textarea name="pattern_text" rows="10" placeholder="Paste your pattern here, one row per line">{{ element.pattern_text or "" }}</textarea>
-                    </label>
-                    <button type="submit">Save pattern</button>
-                </form>
+            <form method="post"
+                {% if has_rows %}onsubmit="return confirm('Saving a new pattern will reset all row progress for this element. Continue?');"{% endif %}>
+                <label for="pattern-textarea">Pattern text
+                    <textarea id="pattern-textarea" name="pattern_text" rows="10" placeholder="Paste your pattern here, one row per line">{{ element.pattern_text or "" }}</textarea>
+                </label>
+                <button type="submit">Save pattern</button>
+            </form>
             </div>
         </div>
 

@@ -9,15 +9,15 @@
         <p class="lead subtle">You will gain a simple place to keep patterns, notes, and project progress in one cozy workspace.</p>
 
         {% if error %}
-            <p class="auth-error">{{ error }}</p>
+            <p id="signup-error" class="auth-error" aria-live="polite">{{ error }}</p>
         {% endif %}
 
         <form class="auth-form" action="/auth/signup" method="post">
-            <label>Email
-                <input type="email" name="email" required>
+            <label for="signup-email">Email
+                <input type="email" id="signup-email" name="email" required{% if error %} aria-describedby="signup-error"{% endif %}>
             </label>
-            <label>Password
-                <input type="password" name="password" required>
+            <label for="signup-password">Password
+                <input type="password" id="signup-password" name="password" required{% if error %} aria-describedby="signup-error"{% endif %}>
             </label>
             <button type="submit">Create account</button>
         </form>

@@ -370,20 +370,20 @@ Extract all template `<style>` blocks into `styles.css` (tokenized), remove inli
 ### Phase 1: Design Tokens
 
 #### Automated
-- [x] 1.1 Create `app/static/tokens.css` with complete token system
-- [x] 1.2 Refactor `app/static/styles.css` to `@import tokens.css` and consume tokens exclusively
-- [x] 1.3 Remove inline critical styles from `base.html`; add preload for `styles.css`
-- [x] 1.4 Full test suite passes: `uv run pytest -q` (76 passed)
+- [x] 1.1 Create `app/static/tokens.css` with complete token system — e40c3be
+- [x] 1.2 Refactor `app/static/styles.css` to `@import tokens.css` and consume tokens exclusively — e40c3be
+- [x] 1.3 Remove inline critical styles from `base.html`; add preload for `styles.css` — abe29a6
+- [x] 1.4 Full test suite passes: `uv run pytest -q` (76 passed) — e40c3be
 
 #### Manual
-- [ ] 1.5 **GATE 1**: No visual change; tokens visible in DevTools; preload works — **Your approval required**
+- [x] 1.5 **GATE 1**: No visual change; tokens visible in DevTools; preload works — **Your approval required**
 
 ### Phase 2: Component System + Accessibility
 
 #### Automated
-- [ ] 2.1 Unify button/input/card variants on tokens; add focus-ring, disabled, touch-target, skip link
-- [ ] 2.2 Add skip link + `id="main"` to `base.html`; complete ARIA on forms
-- [ ] 2.3 Full test suite passes: `uv run pytest -q` (76 passed)
+- [x] 2.1 Unify button/input/card variants on tokens; add focus-ring, disabled, touch-target, skip link
+- [x] 2.2 Add skip link + `id="main"` to `base.html`; complete ARIA on forms
+- [x] 2.3 Full test suite passes: `uv run pytest -q` (76 passed)
 
 #### Manual
 - [ ] 2.4 **GATE 2**: Focus-ring works, Tab navigation, skip link, touch targets ≥44px, disabled states, form ARIA — **Your approval required**

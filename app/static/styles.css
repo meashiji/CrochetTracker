@@ -267,6 +267,7 @@ h1 {
 
 /* ── Buttons & Stats ──────────────────────────────── */
 
+/* Button base */
 .btn {
   display: inline-block;
   padding: var(--space-2) var(--space-4);
@@ -275,13 +276,181 @@ h1 {
   color: var(--color-white);
   font-weight: var(--font-weight-bold);
   border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  line-height: var(--line-height-normal);
 }
 
-.btn-outline {
+.btn:hover {
+  text-decoration: none;
+}
+
+/* Button variants */
+.btn--outline {
   background: var(--color-surface-strong);
   color: var(--color-accent-strong);
   border-color: var(--color-border);
 }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-accent-strong);
+  border-color: transparent;
+}
+
+.btn--icon {
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: var(--font-size-h2);
+  line-height: 1;
+}
+
+.btn--icon:hover {
+  color: var(--color-accent-strong);
+}
+
+/* Submit buttons — unify with .btn */
+button[type="submit"] {
+  display: inline-block;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+  border: none;
+  cursor: pointer;
+  line-height: var(--line-height-normal);
+}
+
+/* Disabled states */
+.btn:disabled,
+.btn[aria-disabled="true"],
+button:disabled,
+button[aria-disabled="true"],
+input:disabled,
+input[aria-disabled="true"],
+select:disabled,
+select[aria-disabled="true"],
+textarea:disabled,
+textarea[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Global focus ring */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Global touch target minimum */
+button,
+a[role="button"],
+input,
+select,
+textarea,
+[tabindex="0"] {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+/* Icon buttons — exempt from full touch target (compact controls) */
+.btn--icon,
+.repeat-stepper button[type="submit"],
+.stitch-panel-close {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 100;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-accent-strong);
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* ── Stats (non-button) ──────────────────────────── */
+
+/* ── Accessibility: focus-ring, disabled, touch targets, skip link ── */
+
+/* Global focus ring */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Disabled states */
+.btn:disabled,
+.btn[aria-disabled="true"],
+button:disabled,
+button[aria-disabled="true"],
+input:disabled,
+input[aria-disabled="true"],
+select:disabled,
+select[aria-disabled="true"],
+textarea:disabled,
+textarea[aria-disabled="true"],
+a[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Global touch target minimum */
+button,
+a[role="button"],
+input,
+select,
+textarea,
+[tabindex="0"] {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 100;
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-accent-strong);
+  color: var(--color-white);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-3);
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* ── Stats ─────────────────────────────────────────── */
 
 .stat-card {
   padding: 18px;

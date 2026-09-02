@@ -15,11 +15,10 @@
     <div class="stat-card">
         <h2>Welcome</h2>
         {% if user %}
-            <p class="subtle">Signed in as {{ user.email }}.</p>
-            <p class="subtle">You can update your password or jump straight into your project list.</p>
-            <p><a href="/auth/change-password">Change password</a></p>
+        <p class="subtle">Signed in as {{ user.email }}.</p>
+        <p><a href="/auth/change-password">Change password</a></p>
         {% else %}
-            <p class="subtle">Sign in to save your projects and keep everything in one place.</p>
+        <p class="subtle">Sign in to save your projects and keep everything in one place.</p>
         {% endif %}
     </div>
 </section>
