@@ -396,7 +396,7 @@ Extract all template `<style>` blocks into `styles.css` (tokenized), remove inli
 - [x] 3.3 Full test suite passes: `uv run pytest -q` (76 passed) — ca4e618 (77 passed)
 
 #### Manual
-- [ ] 3.4 **GATE 3**: Viewports 320→1440px work; no horizontal scroll; mobile layouts correct — **Your approval required**
+- [x] 3.4 **GATE 3**: Viewports 320→1440px work; no horizontal scroll; mobile layouts correct — approved by user 2026-09-02
 
 ### Phase 4: Page Audit & Migration
 
