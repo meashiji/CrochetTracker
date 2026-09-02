@@ -512,9 +512,10 @@ textarea {
 }
 
 /* ── Hidden utility ───────────────────────────────── */
-
+/* Out-specifies any component display value regardless of source order — a
+   utility that must always win over .rename-form/.project-rename-form etc. */
 .is-hidden {
-  display: none;
+  display: none !important;
 }
 
 /* ── Element detail (element_detail.html) ─────────── */
