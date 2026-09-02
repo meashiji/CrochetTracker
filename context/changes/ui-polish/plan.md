@@ -381,9 +381,9 @@ Extract all template `<style>` blocks into `styles.css` (tokenized), remove inli
 ### Phase 2: Component System + Accessibility
 
 #### Automated
-- [x] 2.1 Unify button/input/card variants on tokens; add focus-ring, disabled, touch-target, skip link
-- [x] 2.2 Add skip link + `id="main"` to `base.html`; complete ARIA on forms
-- [x] 2.3 Full test suite passes: `uv run pytest -q` (76 passed)
+- [x] 2.1 Unify button/input/card variants on tokens; add focus-ring, disabled, touch-target, skip link — 3f37aaa
+- [x] 2.2 Add skip link + `id="main"` to `base.html`; complete ARIA on forms — 3f37aaa
+- [x] 2.3 Full test suite passes: `uv run pytest -q` (76 passed) — 3f37aaa
 
 #### Manual
 - [ ] 2.4 **GATE 2**: Focus-ring works, Tab navigation, skip link, touch targets ≥44px, disabled states, form ARIA — **Your approval required**
