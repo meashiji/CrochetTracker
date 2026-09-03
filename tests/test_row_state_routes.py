@@ -466,14 +466,24 @@ async def test_per_rep_toggle_isolation(
     """Toggling a row in rep 2 leaves rep 1's state for that row untouched."""
     project, element, rows = project_element_rows
     row = rows[0]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
 
     await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/repeat-count",
+        f"{element_url}/repeat-count",
         data={"repeat_count": 2},
         follow_redirects=False,
     )
+    # Rep 2 advances are gated on rep 1 being fully done — complete rep 1 first.
+    for rep_row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+
     response = await async_client.post(
-        f"/projects/{project.id}/elements/{element.id}/reps/2/rows/{row.id}/state",
+        f"{element_url}/reps/2/rows/{row.id}/state",
         follow_redirects=False,
     )
 
@@ -481,7 +491,166 @@ async def test_per_rep_toggle_isolation(
     rep_2_state = await _rep_row_state(db_session, element.id, 2, row.id)
     assert rep_2_state.state == RowStateEnum.in_progress
     rep_1_state = await _rep_row_state(db_session, element.id, 1, row.id)
-    assert rep_1_state.state == RowStateEnum.not_started
+    assert rep_1_state.state == RowStateEnum.done
+
+
+async def test_advance_blocked_when_predecessor_not_done(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Row 2 cannot advance while row 1 is not done — state stays not_started."""
+    project, element, rows = project_element_rows
+    row2 = rows[1]
+    url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row2.id}/state"
+
+    response = await async_client.post(url, follow_redirects=False)
+
+    assert response.status_code == 200
+    row_state = await _row_state(db_session, row2.id)
+    assert row_state.state == RowStateEnum.not_started
+
+
+async def test_advance_allowed_when_predecessor_done(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Row 2 advances once row 1 (its predecessor) is done."""
+    project, element, rows = project_element_rows
+    row1, row2 = rows[0], rows[1]
+    url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows"
+
+    # Row 1 -> done.
+    await async_client.post(f"{url}/{row1.id}/state", follow_redirects=False)
+    await async_client.post(f"{url}/{row1.id}/state", follow_redirects=False)
+
+    response = await async_client.post(f"{url}/{row2.id}/state", follow_redirects=False)
+
+    assert response.status_code == 200
+    row_state = await _row_state(db_session, row2.id)
+    assert row_state.state == RowStateEnum.in_progress
+
+
+async def test_revert_always_allowed_even_for_orphaned_done(
+    test_user, async_client, db_session, project_element_rows
+):
+    """A done row with an undone predecessor can still be reverted to not_started."""
+    project, element, rows = project_element_rows
+    row1, row2 = rows[0], rows[1]
+    url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows"
+
+    # Row 1 -> done, Row 2 -> done.
+    for row in (row1, row2):
+        await async_client.post(f"{url}/{row.id}/state", follow_redirects=False)
+        await async_client.post(f"{url}/{row.id}/state", follow_redirects=False)
+
+    # Revert row 1 (done -> not_started): allowed.
+    await async_client.post(f"{url}/{row1.id}/state", follow_redirects=False)
+    row1_state = await _row_state(db_session, row1.id)
+    assert row1_state.state == RowStateEnum.not_started
+
+    # Row 2 is now an orphaned done. Reverting it (done -> not_started) is allowed.
+    response = await async_client.post(f"{url}/{row2.id}/state", follow_redirects=False)
+    assert response.status_code == 200
+    row2_state = await _row_state(db_session, row2.id)
+    assert row2_state.state == RowStateEnum.not_started
+
+
+async def test_rep2_advance_blocked_while_rep1_incomplete(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Rep 2 rows cannot advance while rep 1 is not fully done."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count",
+        data={"repeat_count": 2},
+        follow_redirects=False,
+    )
+
+    response = await async_client.post(
+        f"{element_url}/reps/2/rows/{row.id}/state", follow_redirects=False
+    )
+
+    assert response.status_code == 200
+    rep_2_state = await _rep_row_state(db_session, element.id, 2, row.id)
+    assert rep_2_state.state == RowStateEnum.not_started
+
+
+async def test_rep2_advance_allowed_when_rep1_done(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Rep 2 rows advance once rep 1 is fully done."""
+    project, element, rows = project_element_rows
+    row = rows[0]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count",
+        data={"repeat_count": 2},
+        follow_redirects=False,
+    )
+    for rep_row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+
+    response = await async_client.post(
+        f"{element_url}/reps/2/rows/{row.id}/state", follow_redirects=False
+    )
+
+    assert response.status_code == 200
+    rep_2_state = await _rep_row_state(db_session, element.id, 2, row.id)
+    assert rep_2_state.state == RowStateEnum.in_progress
+
+
+async def test_rep2_advance_requires_predecessor_done_within_rep(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Rep 2 row 2 is blocked while rep 2 row 1 isn't done, even if rep 1 is done."""
+    project, element, rows = project_element_rows
+    row2 = rows[1]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count",
+        data={"repeat_count": 2},
+        follow_redirects=False,
+    )
+    for rep_row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+
+    response = await async_client.post(
+        f"{element_url}/reps/2/rows/{row2.id}/state", follow_redirects=False
+    )
+
+    assert response.status_code == 200
+    rep_2_state = await _rep_row_state(db_session, element.id, 2, row2.id)
+    assert rep_2_state.state == RowStateEnum.not_started
+
+
+async def test_blocked_advance_does_not_bump_project_updated_at(
+    test_user, async_client, db_session, project_element_rows
+):
+    """A blocked advance leaves the project's updated_at unchanged."""
+    project, element, rows = project_element_rows
+    row2 = rows[1]
+    url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row2.id}/state"
+
+    await db_session.refresh(project)
+    updated_before = project.updated_at
+
+    await async_client.post(url, follow_redirects=False)
+
+    await db_session.refresh(project)
+    assert project.updated_at == updated_before
 
 
 async def test_rep_resolution_query_param_cookie_and_404(
@@ -496,7 +665,15 @@ async def test_rep_resolution_query_param_cookie_and_404(
     await async_client.post(
         f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
     )
-    # Differing mark: rep 2's row 1 goes in_progress, rep 1's stays not_started.
+    # Rep 2 advances are gated on rep 1 being fully done — complete rep 1 first.
+    for rep_row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{rep_row.id}/state", follow_redirects=False
+        )
+    # Differing mark: rep 2's row 1 goes in_progress, rep 1's rows stay done.
     await async_client.post(
         f"{element_url}/reps/2/rows/{row.id}/state", follow_redirects=False
     )

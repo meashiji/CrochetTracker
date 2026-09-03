@@ -205,6 +205,77 @@ def _first_unmarked_row_id(
     return None
 
 
+async def _rep_is_complete(
+    element: Element, repetition: ElementRepetition, session: AsyncSession
+) -> bool:
+    """Whether ``repetition`` is fully done: every row of ``element`` is ``done``.
+
+    An element with no pasted rows has nothing to block and is treated as complete.
+    """
+    row_count = (
+        await session.execute(
+            select(func.count(Row.id)).where(Row.element_id == element.id)
+        )
+    ).scalar_one()
+    if row_count == 0:
+        return True
+    done_count = (
+        await session.execute(
+            select(func.count(RowState.id)).where(
+                RowState.element_repetition_id == repetition.id,
+                RowState.state == RowStateEnum.done,
+            )
+        )
+    ).scalar_one()
+    return done_count == row_count
+
+
+async def _can_advance_row(
+    element: Element,
+    repetition: ElementRepetition,
+    row: Row,
+    session: AsyncSession,
+) -> bool:
+    """Whether an advance on ``row`` in ``repetition`` is allowed by crochet order.
+
+    Two gates must both pass, when they apply:
+      1. Within-rep: the previous row (``position - 1``) in the same repetition is
+         ``done``. Row 1 (no predecessor) passes this gate.
+      2. Across-rep: for repetition N > 1, rep N-1 is fully ``done``. Rep 1 passes.
+
+    Reverts (``done -> not_started``) are never gated by this helper — callers only
+    use it for the not_started->in_progress and in_progress->done transitions.
+    """
+    prev_row = (
+        await session.execute(
+            select(Row).where(
+                Row.element_id == element.id,
+                Row.position == row.position - 1,
+            )
+        )
+    ).scalar_one_or_none()
+    if prev_row is not None:
+        prev_state = (
+            await session.execute(
+                select(RowState).where(
+                    RowState.element_repetition_id == repetition.id,
+                    RowState.row_id == prev_row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if prev_state is None or prev_state.state != RowStateEnum.done:
+            return False
+
+    if repetition.repetition_number > 1:
+        prev_rep = await _get_element_repetition_by_number(
+            element.id, repetition.repetition_number - 1, session
+        )
+        if not await _rep_is_complete(element, prev_rep, session):
+            return False
+
+    return True
+
+
 async def _render_project_list(
     request: Request,
     user: User,
@@ -917,7 +988,28 @@ async def row_state_toggle(
     row_state = result.scalar_one_or_none()
     if row_state is None:
         raise HTTPException(status_code=404)
-    row_state.state = ROW_STATE_CYCLE[row_state.state]
+
+    next_state = ROW_STATE_CYCLE[row_state.state]
+    # Crochet order: only advances (toward done) are gated; reverts to not_started
+    # are always allowed (even for an orphaned done row). A blocked advance leaves
+    # state unchanged and no project.updated_at bump.
+    if next_state in (RowStateEnum.in_progress, RowStateEnum.done):
+        if not await _can_advance_row(element, repetition, row, session):
+            return templates.TemplateResponse(
+                request,
+                "projects/_row.html",
+                {
+                    "project": project,
+                    "element": element,
+                    "row": row,
+                    "row_progress": {row.id: row_state},
+                    "current_row_id": None,
+                    "rep_number": rep_number,
+                },
+                status_code=200,
+            )
+
+    row_state.state = next_state
     session.add(row_state)
 
     project.updated_at = datetime.now(timezone.utc)
