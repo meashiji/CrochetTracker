@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import delete, func, insert, select
 from sqlalchemy.exc import IntegrityError
@@ -274,6 +274,42 @@ async def _can_advance_row(
             return False
 
     return True
+
+
+async def _locked_row_ids(
+    rows: list[Row],
+    row_progress: dict[int, RowState],
+    element: Element,
+    rep_number: int,
+    session: AsyncSession,
+) -> set[int]:
+    """Ids of rows whose next transition would be a blocked advance.
+
+    A row is locked when its state is not ``done`` AND (its immediate predecessor
+    in this rep is not ``done`` OR the prior rep is not fully ``done``). ``done``
+    rows are never locked (their next transition is a revert, always allowed).
+    Mirrors ``_can_advance_row`` for the render path, using the already-fetched
+    ``row_progress`` instead of per-row queries.
+    """
+    rep_unlocked = True
+    if rep_number > 1:
+        prev_rep = await _get_element_repetition_by_number(
+            element.id, rep_number - 1, session
+        )
+        rep_unlocked = await _rep_is_complete(element, prev_rep, session)
+
+    locked: set[int] = set()
+    prev_done = True  # row 1 has no predecessor, so its within-rep gate passes
+    for row in rows:
+        row_state = row_progress.get(row.id)
+        state = row_state.state if row_state is not None else None
+        if state == RowStateEnum.done:
+            prev_done = True
+        else:
+            if not prev_done or not rep_unlocked:
+                locked.add(row.id)
+            prev_done = False
+    return locked
 
 
 async def _render_project_list(
@@ -592,11 +628,15 @@ async def _render_element_detail(
             element.id, rep_number, session
         )
         row_progress = await _build_row_progress(repetition.id, rows, session)
+        locked_row_ids = await _locked_row_ids(
+            rows, row_progress, element, rep_number, session
+        )
     else:
         # No pattern saved yet: no repetitions exist, so there is nothing to
         # resolve or scope — show the degenerate rep 1 and never write a cookie.
         rep_number, is_explicit = 1, False
         row_progress = {}
+        locked_row_ids = set()
 
     current_row_id = _first_unmarked_row_id(rows, row_progress)
     context = {
@@ -605,6 +645,7 @@ async def _render_element_detail(
         "element": element,
         "rows": rows,
         "row_progress": row_progress,
+        "locked_row_ids": locked_row_ids,
         "has_rows": len(rows) > 0,
         "current_row_id": current_row_id,
         "rep_number": rep_number,
@@ -1003,6 +1044,7 @@ async def row_state_toggle(
                     "element": element,
                     "row": row,
                     "row_progress": {row.id: row_state},
+                    "locked_row_ids": {row.id},
                     "current_row_id": None,
                     "rep_number": rep_number,
                 },
@@ -1018,19 +1060,66 @@ async def row_state_toggle(
     # Commit so the fragment reflects the new state.
     await session.commit()
 
-    return templates.TemplateResponse(
-        request,
-        "projects/_row.html",
-        {
-            "project": project,
-            "element": element,
-            "row": row,
-            "row_progress": {row.id: row_state},
-            "current_row_id": None,
-            "rep_number": rep_number,
-        },
-        status_code=200,
+    # The changed row's lock state affects the NEXT row (its predecessor changed),
+    # so swap that row out-of-band too — otherwise it stale-locks until reload.
+    next_row = (
+        await session.execute(
+            select(Row).where(
+                Row.element_id == element.id, Row.position == row.position + 1
+            )
+        )
+    ).scalar_one_or_none()
+
+    def _row_fragment(rendered_row, rendered_state, rendered_locked, *, oob=False):
+        return templates.env.get_template("projects/_row.html").render(
+            project=project,
+            element=element,
+            row=rendered_row,
+            row_progress={rendered_row.id: rendered_state},
+            locked_row_ids={rendered_row.id} if rendered_locked else set(),
+            current_row_id=None,
+            rep_number=rep_number,
+            oob=oob,
+        )
+
+    changed_row_locked = (
+        next_state == RowStateEnum.not_started
+        and not await _can_advance_row(element, repetition, row, session)
     )
+    body = _row_fragment(row, row_state, rendered_locked=changed_row_locked)
+    if next_row is not None:
+        rep_unlocked = True
+        if repetition.repetition_number > 1:
+            prev_rep = await _get_element_repetition_by_number(
+                element.id, repetition.repetition_number - 1, session
+            )
+            rep_unlocked = await _rep_is_complete(element, prev_rep, session)
+        next_row_state = (
+            await session.execute(
+                select(RowState).where(
+                    RowState.element_repetition_id == repetition.id,
+                    RowState.row_id == next_row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        # A missing RowState behaves as not_started (i.e. not done).
+        next_done = (
+            next_row_state is not None and next_row_state.state == RowStateEnum.done
+        )
+        # next row is locked iff it's not done AND (its predecessor (this row) isn't
+        # done OR the prior rep isn't complete) — mirrors _locked_row_ids.
+        next_locked = not next_done and (
+            row_state.state != RowStateEnum.done or not rep_unlocked
+        )
+        if next_row_state is None:
+            next_row_state = RowState(
+                element_repetition_id=repetition.id,
+                row_id=next_row.id,
+                state=RowStateEnum.not_started,
+            )
+        body += _row_fragment(next_row, next_row_state, next_locked, oob=True)
+
+    return HTMLResponse(body, status_code=200)
 
 
 @router.post(
@@ -1064,6 +1153,13 @@ async def row_update_stitch_position(
     if row_state is None:
         raise HTTPException(status_code=404)
 
+    locked_row_ids = (
+        {row.id}
+        if row_state.state != RowStateEnum.done
+        and not await _can_advance_row(element, repetition, row, session)
+        else set()
+    )
+
     def _render_fragment(*, stitch_error: bool = False):
         return templates.TemplateResponse(
             request,
@@ -1073,6 +1169,7 @@ async def row_update_stitch_position(
                 "element": element,
                 "row": row,
                 "row_progress": {row.id: row_state},
+                "locked_row_ids": locked_row_ids,
                 "current_row_id": None,
                 "rep_number": rep_number,
                 "stitch_error": stitch_error,

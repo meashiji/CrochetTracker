@@ -694,6 +694,22 @@ textarea {
   box-shadow: 0 0 0 2px var(--color-ring-destructive);
 }
 
+/* Row state: locked (advance blocked — predecessor/prior rep not done) */
+.row-item--locked .row-toggle {
+  opacity: 0.55;
+  cursor: not-allowed;
+  color: var(--color-muted);
+  background: var(--color-row-base);
+  border-style: dashed;
+}
+.row-item--locked .row-dot {
+  color: var(--color-muted);
+}
+.row-item--current.row-item--locked .row-toggle {
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
 /* ── Element title row ────────────────────────────── */
 
 .element-title-row {

@@ -2,14 +2,16 @@
 {% set state = row_state.state %}
 {% set glyph = {"not_started": "○", "in_progress": "◐", "done": "●"}[state.value] %}
 {% set is_current = current_row_id is defined and row.id == current_row_id %}
-<li id="row-{{ row.id }}" class="row-item row-item--{{ state.value }}{{ ' row-item--current' if is_current else '' }}{{ ' row-item--error' if stitch_error else '' }}">
+{% set is_locked = locked_row_ids is defined and row.id in locked_row_ids %}
+<li id="row-{{ row.id }}"{% if oob %} hx-swap-oob="true"{% endif %} class="row-item row-item--{{ state.value }}{{ ' row-item--current' if is_current else '' }}{{ ' row-item--locked' if is_locked else '' }}{{ ' row-item--error' if stitch_error else '' }}">
     <button type="button"
         class="row-toggle"
+        {% if is_locked %}disabled aria-disabled="true"{% endif %}
         hx-post="/projects/{{ project.id }}/elements/{{ element.id }}/reps/{{ rep_number }}/rows/{{ row.id }}/state"
         hx-target="closest li"
         hx-swap="outerHTML"
         hx-on::responseError="this.closest('li').classList.add('row-item--error')"
-        aria-label="Mark row {{ row.position }} as next state">
+        aria-label="{% if is_locked %}Row {{ row.position }} locked — finish the previous row first{% else %}Mark row {{ row.position }} as next state{% endif %}">
         <span class="row-dot">{{ glyph }}</span>{{ row.content }}
     </button>
     {% if state.value == "in_progress" %}

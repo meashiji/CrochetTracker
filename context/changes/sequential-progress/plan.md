@@ -361,26 +361,27 @@ as-is; the no-cascade rule is explicit. No backfill needed.
 
 #### Automated
 
-- [x] 1.1 Add rep-completeness + gating helpers in `app/routes/projects.py`
-- [x] 1.2 Gate advance transitions in `row_state_toggle`; revert always allowed; no `updated_at` bump on blocked
-- [x] 1.3 Update/extend tests for sequential gate; full suite passes
+- [x] 1.1 Add rep-completeness + gating helpers in `app/routes/projects.py` — a3ccb56
+- [x] 1.2 Gate advance transitions in `row_state_toggle`; revert always allowed; no `updated_at` bump on blocked — a3ccb56
+- [x] 1.3 Update/extend tests for sequential gate; full suite passes — a3ccb56
 
 #### Manual
 
-- [x] 1.4 Blocked advance leaves state unchanged (manual/API check)
+- [x] 1.4 Blocked advance leaves state unchanged (manual/API check) — a3ccb56
 
 ### Phase 2: UI Row Lock
 
 #### Automated
 
-- [ ] 2.1 Compute and pass per-row locked flags in render
-- [ ] 2.2 Render locked rows disabled with `row-item--locked` in `_row.html`
-- [ ] 2.3 Add `.row-item--locked` CSS
-- [ ] 2.4 Test locked rendering (disabled class) and revertable-done rendering; full suite passes
+- [x] 2.1 Compute and pass per-row locked flags in render
+- [x] 2.2 Render locked rows disabled with `row-item--locked` in `_row.html`
+- [x] 2.3 Add `.row-item--locked` CSS
+- [x] 2.4 Swap the next row out-of-band on toggle so lock/unlock updates without reload
+- [x] 2.5 Test locked rendering (disabled class), revertable-done rendering, OOB unlock/lock; full suite passes (88)
 
 #### Manual
 
-- [ ] 2.5 Locked rows dimmed/inactive; done rows stay revertable (manual check)
+- [ ] 2.6 Marking a row done unlocks the next row dynamically (no reload); reverting re-locks
 
 ### Phase 3: Rep Lock + Auto-Jump
 

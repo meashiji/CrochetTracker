@@ -549,6 +549,8 @@ async def test_revert_always_allowed_even_for_orphaned_done(
     # Row 2 is now an orphaned done. Reverting it (done -> not_started) is allowed.
     response = await async_client.post(f"{url}/{row2.id}/state", follow_redirects=False)
     assert response.status_code == 200
+    assert "row-item--locked" in response.text
+    assert "disabled" in response.text
     row2_state = await _row_state(db_session, row2.id)
     assert row2_state.state == RowStateEnum.not_started
 
@@ -651,6 +653,145 @@ async def test_blocked_advance_does_not_bump_project_updated_at(
 
     await db_session.refresh(project)
     assert project.updated_at == updated_before
+
+
+async def test_locked_rows_render_disabled(
+    test_user, async_client, db_session, project_element_rows
+):
+    """With row 1 not done, rows 2+ render locked (row-item--locked, disabled)."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    response = await async_client.get(element_url)
+
+    assert response.status_code == 200
+    # Row 1 is the first unmarked/current row — active, not locked.
+    assert "row-item--current" in response.text
+    assert (
+        f'id="row-{rows[0].id}" class="row-item row-item--not_started row-item--current">'
+        in response.text
+    )
+    # Rows 2 and 3 are locked.
+    assert response.text.count("row-item--locked") == 2
+    assert f'<li id="row-{rows[1].id}" ' in response.text
+    assert f'<li id="row-{rows[2].id}" ' in response.text
+    assert "disabled" in response.text
+
+
+async def test_done_rows_not_locked(
+    test_user, async_client, db_session, project_element_rows
+):
+    """All rows done — nothing is locked (each done row is revertable)."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    for row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+
+    response = await async_client.get(element_url)
+
+    assert response.status_code == 200
+    assert response.text.count("row-item--locked") == 0
+
+
+async def test_orphaned_done_row_not_locked(
+    test_user, async_client, db_session, project_element_rows
+):
+    """A revertable done row (with an undone predecessor) is not rendered locked."""
+    project, element, rows = project_element_rows
+    row1, row2 = rows[0], rows[1]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    # Mark rows 1 and 2 done.
+    for row in (row1, row2):
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+    # Revert row 1 -> orphaned done row 2.
+    await async_client.post(
+        f"{element_url}/reps/1/rows/{row1.id}/state", follow_redirects=False
+    )
+
+    response = await async_client.get(element_url)
+
+    assert response.status_code == 200
+    # Row 1 is the current advanceable row; row 2 (done) and row 3 (done) are not locked.
+    assert response.text.count("row-item--locked") == 0
+
+
+async def test_rep2_rows_render_locked_while_rep1_incomplete(
+    test_user, async_client, db_session, project_element_rows
+):
+    """All rows of rep 2 render locked while rep 1 isn't fully done."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+
+    response = await async_client.get(f"{element_url}?rep=2")
+
+    assert response.status_code == 200
+    assert response.text.count("row-item--locked") == len(rows)
+
+
+async def test_advance_to_done_unlocks_next_row_via_oob(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Marking row 1 done returns an out-of-band fragment unlocking row 2."""
+    project, element, rows = project_element_rows
+    row1, row2 = rows[0], rows[1]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/reps/1/rows/{row1.id}/state", follow_redirects=False
+    )
+    response = await async_client.post(
+        f"{element_url}/reps/1/rows/{row1.id}/state", follow_redirects=False
+    )
+
+    # Row 2 is swapped out-of-band and no longer locked.
+    assert response.status_code == 200
+    assert 'hx-swap-oob="true"' in response.text
+    assert (
+        f'<li id="row-{row2.id}" hx-swap-oob="true" '
+        f'class="row-item row-item--not_started">' in response.text
+    )
+    assert "row-item--locked" not in response.text
+
+
+async def test_revert_locks_next_row_via_oob(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Reverting row 1 from done returns an OOB fragment locking row 2."""
+    project, element, rows = project_element_rows
+    row1, row2 = rows[0], rows[1]
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    for _ in range(2):
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row1.id}/state", follow_redirects=False
+        )
+    # Row 1 is now done; row 2 is not_started and unlocked. Revert row 1.
+    response = await async_client.post(
+        f"{element_url}/reps/1/rows/{row1.id}/state", follow_redirects=False
+    )
+
+    assert response.status_code == 200
+    assert 'hx-swap-oob="true"' in response.text
+    assert (
+        f'<li id="row-{row2.id}" hx-swap-oob="true" '
+        f'class="row-item row-item--not_started row-item--locked">' in response.text
+    )
 
 
 async def test_rep_resolution_query_param_cookie_and_404(
