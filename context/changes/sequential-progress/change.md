@@ -1,7 +1,7 @@
 ---
 change_id: sequential-progress
 title: Enforce sequential row & repeat progress (crochet ordering)
-status: implementing
+status: implemented
 created: 2026-09-03
 updated: 2026-09-03
 archived_at: null

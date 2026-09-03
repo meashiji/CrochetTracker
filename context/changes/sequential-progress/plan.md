@@ -387,11 +387,11 @@ as-is; the no-cascade rule is explicit. No backfill needed.
 
 #### Automated
 
-- [x] 3.1 Expose per-rep completeness for the pill lock; render `rep-pill--locked` lock glyph
-- [x] 3.2 Add `.rep-pill--locked` CSS
-- [x] 3.3 Auto-navigate (full GET, no `?rep=`) to first not-fully-done rep; explicit `?rep=` not overridden
-- [x] 3.4 Tests for rep pill lock + auto-jump; full suite passes (92)
+- [x] 3.1 Expose per-rep completeness for the pill lock; render `rep-pill--locked` lock glyph — ee64823
+- [x] 3.2 Add `.rep-pill--locked` CSS — ee64823
+- [x] 3.3 Auto-navigate (full GET, no `?rep=`) to first not-fully-done rep; explicit `?rep=` not overridden — ee64823
+- [x] 3.4 Tests for rep pill lock + auto-jump; full suite passes (92) — ee64823
 
 #### Manual
 
-- [x] 3.5 Rep pill lock + auto-land on first incomplete rep (manual check)
+- [x] 3.5 Rep pill lock + auto-land on first incomplete rep (manual check) — ee64823
