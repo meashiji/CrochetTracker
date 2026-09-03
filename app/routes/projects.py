@@ -230,6 +230,39 @@ async def _rep_is_complete(
     return done_count == row_count
 
 
+async def _build_rep_completion(
+    element: Element, rows: list[Row], session: AsyncSession
+) -> dict[int, bool]:
+    """Return whether each repetition is fully done, keyed by repetition number."""
+    reps_result = await session.execute(
+        select(ElementRepetition)
+        .where(ElementRepetition.element_id == element.id)
+        .order_by(ElementRepetition.repetition_number.asc())
+    )
+    repetitions = reps_result.scalars().all()
+    if not repetitions:
+        return {}
+    if not rows:
+        return {repetition.repetition_number: True for repetition in repetitions}
+
+    done_result = await session.execute(
+        select(RowState.element_repetition_id, func.count(RowState.id))
+        .where(
+            RowState.element_repetition_id.in_(
+                repetition.id for repetition in repetitions
+            ),
+            RowState.state == RowStateEnum.done,
+        )
+        .group_by(RowState.element_repetition_id)
+    )
+    done_by_repetition = dict(done_result.all())
+    return {
+        repetition.repetition_number: done_by_repetition.get(repetition.id, 0)
+        == len(rows)
+        for repetition in repetitions
+    }
+
+
 async def _can_advance_row(
     element: Element,
     repetition: ElementRepetition,
@@ -624,6 +657,22 @@ async def _render_element_detail(
 
     if rows:
         rep_number, is_explicit = _resolve_requested_rep(request, element)
+        rep_complete_by_number = await _build_rep_completion(element, rows, session)
+        first_incomplete_rep = next(
+            (
+                number
+                for number in range(1, element.repeat_count + 1)
+                if not rep_complete_by_number.get(number, False)
+            ),
+            None,
+        )
+        auto_jumped = (
+            not is_explicit
+            and first_incomplete_rep is not None
+            and first_incomplete_rep != rep_number
+        )
+        if auto_jumped:
+            rep_number = first_incomplete_rep
         repetition = await _get_element_repetition_by_number(
             element.id, rep_number, session
         )
@@ -635,6 +684,8 @@ async def _render_element_detail(
         # No pattern saved yet: no repetitions exist, so there is nothing to
         # resolve or scope — show the degenerate rep 1 and never write a cookie.
         rep_number, is_explicit = 1, False
+        rep_complete_by_number = {}
+        auto_jumped = False
         row_progress = {}
         locked_row_ids = set()
 
@@ -650,14 +701,15 @@ async def _render_element_detail(
         "current_row_id": current_row_id,
         "rep_number": rep_number,
         "rep_numbers": range(1, element.repeat_count + 1),
+        "rep_complete_by_number": rep_complete_by_number,
     }
     context.update(extra_context)
     response = templates.TemplateResponse(
         request, "projects/element_detail.html", context
     )
-    if is_explicit:
-        # Pin the rep only when the user explicitly picked one (pill click) —
-        # a bare GET must not re-pin a rep the user didn't choose this visit.
+    if is_explicit or auto_jumped:
+        # Explicit rep picks and automatic jumps both pin the displayed rep. A bare
+        # GET that stays on the last-viewed rep leaves its cookie untouched.
         response.set_cookie(
             f"last_rep_{element.id}",
             str(rep_number),
@@ -986,6 +1038,7 @@ async def element_update_repeat_count(
                     },
                 )
         rep_number, _ = _resolve_requested_rep(request, element)
+        rep_complete_by_number = await _build_rep_completion(element, rows, session)
         return templates.TemplateResponse(
             request,
             "projects/_repeat_stepper.html",
@@ -995,6 +1048,7 @@ async def element_update_repeat_count(
                 "has_rows": bool(rows),
                 "rep_number": rep_number,
                 "rep_numbers": range(1, element.repeat_count + 1),
+                "rep_complete_by_number": rep_complete_by_number,
             },
         )
     return RedirectResponse(
@@ -1069,6 +1123,11 @@ async def row_state_toggle(
             )
         )
     ).scalar_one_or_none()
+    rows_result = await session.execute(
+        select(Row).where(Row.element_id == element.id).order_by(Row.position.asc())
+    )
+    rows = rows_result.scalars().all()
+    rep_complete_by_number = await _build_rep_completion(element, rows, session)
 
     def _row_fragment(rendered_row, rendered_state, rendered_locked, *, oob=False):
         return templates.env.get_template("projects/_row.html").render(
@@ -1118,6 +1177,14 @@ async def row_state_toggle(
                 state=RowStateEnum.not_started,
             )
         body += _row_fragment(next_row, next_row_state, next_locked, oob=True)
+
+    body += templates.env.get_template("projects/_rep_pills.html").render(
+        element=element,
+        rep_number=rep_number,
+        rep_numbers=range(1, element.repeat_count + 1),
+        rep_complete_by_number=rep_complete_by_number,
+        oob=True,
+    )
 
     return HTMLResponse(body, status_code=200)
 

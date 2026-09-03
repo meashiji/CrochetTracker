@@ -794,6 +794,32 @@ async def test_revert_locks_next_row_via_oob(
     )
 
 
+async def test_completing_rep_unlocks_next_pill_via_oob(
+    test_user, async_client, db_session, project_element_rows
+):
+    """Completing the final row returns rep-pill markup with the next rep unlocked."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+
+    for row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+        response = await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+
+    assert response.status_code == 200
+    assert '<nav id="rep-pills"' in response.text
+    assert 'hx-swap-oob="outerHTML"' in response.text
+    assert '<a href="?rep=2" class="rep-pill"' in response.text
+    assert "🔒" not in response.text
+
+
 async def test_rep_resolution_query_param_cookie_and_404(
     test_user, async_client, db_session, project_element_rows
 ):
@@ -819,24 +845,34 @@ async def test_rep_resolution_query_param_cookie_and_404(
         f"{element_url}/reps/2/rows/{row.id}/state", follow_redirects=False
     )
 
-    # Bare GET with no cookie renders rep 1.
+    # Bare GET auto-jumps to the first incomplete rep and pins it, even though the
+    # last-viewed/default rep would otherwise be rep 1.
     response = await async_client.get(element_url)
-    assert response.status_code == 200
-    assert f"{element_url}/reps/1/rows/" in response.text
-    assert "◐" not in response.text
-
-    # Explicit ?rep=2 renders rep 2 and pins the cookie.
-    response = await async_client.get(f"{element_url}?rep=2")
     assert response.status_code == 200
     assert f"{element_url}/reps/2/rows/" in response.text
     assert "◐" in response.text
     assert f"last_rep_{element.id}=2" in response.headers["set-cookie"]
 
-    # A subsequent bare GET (client retains the cookie) still renders rep 2.
+    # Explicit ?rep=1 is never overridden by auto-jump and pins rep 1.
+    response = await async_client.get(f"{element_url}?rep=1")
+    assert response.status_code == 200
+    assert f"{element_url}/reps/1/rows/" in response.text
+    assert "◐" not in response.text
+    assert f"last_rep_{element.id}=1" in response.headers["set-cookie"]
+
+    # A subsequent bare GET corrects the rep 1 cookie back to the first incomplete
+    # rep, rather than leaving the user on a completed repetition.
     response = await async_client.get(element_url)
     assert response.status_code == 200
     assert f"{element_url}/reps/2/rows/" in response.text
     assert "◐" in response.text
+
+    # Explicit ?rep=2 still renders rep 2 and pins the cookie.
+    response = await async_client.get(f"{element_url}?rep=2")
+    assert response.status_code == 200
+    assert f"{element_url}/reps/2/rows/" in response.text
+    assert "◐" in response.text
+    assert f"last_rep_{element.id}=2" in response.headers["set-cookie"]
 
     # Bad URLs 404 — explicit params are never clamped.
     response = await async_client.get(f"{element_url}?rep=99")
@@ -865,6 +901,86 @@ async def test_stale_rep_cookie_is_clamped_not_404(
     response = await async_client.get(element_url)
     assert response.status_code == 200
     assert f"{element_url}/reps/1/rows/" in response.text
+
+
+async def test_locked_rep_pill_stays_clickable(
+    test_user, async_client, db_session, project_element_rows
+):
+    """An incomplete prior rep locks the pill visually but keeps its link."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+
+    response = await async_client.get(f"{element_url}?rep=2")
+
+    assert response.status_code == 200
+    assert (
+        '<a href="?rep=2" class="rep-pill rep-pill--active rep-pill--locked"'
+        in response.text
+    )
+    assert 'aria-label="Rep 2 locked' in response.text
+    assert "🔒" in response.text
+
+
+async def test_bare_get_jumps_from_last_viewed_to_first_incomplete_rep(
+    test_user, async_client, db_session, project_element_rows
+):
+    """A stale last-viewed rep is replaced by the first incomplete repetition."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 3}, follow_redirects=False
+    )
+    # Complete rep 1; rep 2 remains the first incomplete rep.
+    for row in rows:
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+        await async_client.post(
+            f"{element_url}/reps/1/rows/{row.id}/state", follow_redirects=False
+        )
+
+    # Simulate returning from the last viewed rep.
+    await async_client.get(f"{element_url}?rep=3")
+    response = await async_client.get(element_url)
+
+    assert response.status_code == 200
+    assert f"{element_url}/reps/2/rows/" in response.text
+    assert f"{element_url}/reps/3/rows/" not in response.text
+    assert f"last_rep_{element.id}=2" in response.headers["set-cookie"]
+
+
+async def test_all_done_bare_get_stays_on_last_viewed_rep(
+    test_user, async_client, db_session, project_element_rows
+):
+    """When every rep is done, a bare GET preserves the last-viewed rep."""
+    project, element, rows = project_element_rows
+    element_url = f"/projects/{project.id}/elements/{element.id}"
+
+    await async_client.post(
+        f"{element_url}/repeat-count", data={"repeat_count": 2}, follow_redirects=False
+    )
+    for rep_number in (1, 2):
+        for row in rows:
+            await async_client.post(
+                f"{element_url}/reps/{rep_number}/rows/{row.id}/state",
+                follow_redirects=False,
+            )
+            await async_client.post(
+                f"{element_url}/reps/{rep_number}/rows/{row.id}/state",
+                follow_redirects=False,
+            )
+
+    await async_client.get(f"{element_url}?rep=2")
+    response = await async_client.get(element_url)
+
+    assert response.status_code == 200
+    assert f"{element_url}/reps/2/rows/" in response.text
+    assert "◐" not in response.text
 
 
 async def test_auto_jump_is_per_rep(

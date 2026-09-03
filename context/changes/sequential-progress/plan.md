@@ -373,25 +373,25 @@ as-is; the no-cascade rule is explicit. No backfill needed.
 
 #### Automated
 
-- [x] 2.1 Compute and pass per-row locked flags in render
-- [x] 2.2 Render locked rows disabled with `row-item--locked` in `_row.html`
-- [x] 2.3 Add `.row-item--locked` CSS
-- [x] 2.4 Swap the next row out-of-band on toggle so lock/unlock updates without reload
-- [x] 2.5 Test locked rendering (disabled class), revertable-done rendering, OOB unlock/lock; full suite passes (88)
+- [x] 2.1 Compute and pass per-row locked flags in render — 8fc7c0a
+- [x] 2.2 Render locked rows disabled with `row-item--locked` in `_row.html` — 8fc7c0a
+- [x] 2.3 Add `.row-item--locked` CSS — 8fc7c0a
+- [x] 2.4 Swap the next row out-of-band on toggle so lock/unlock updates without reload — 8fc7c0a
+- [x] 2.5 Test locked rendering (disabled class), revertable-done rendering, OOB unlock/lock; full suite passes (88) — 8fc7c0a
 
 #### Manual
 
-- [ ] 2.6 Marking a row done unlocks the next row dynamically (no reload); reverting re-locks
+- [x] 2.6 Marking a row done unlocks the next row dynamically (no reload); reverting re-locks — 8fc7c0a
 
 ### Phase 3: Rep Lock + Auto-Jump
 
 #### Automated
 
-- [ ] 3.1 Expose per-rep completeness for the pill lock; render `rep-pill--locked` lock glyph
-- [ ] 3.2 Add `.rep-pill--locked` CSS
-- [ ] 3.3 Auto-navigate (full GET, no `?rep=`) to first not-fully-done rep; explicit `?rep=` not overridden
-- [ ] 3.4 Tests for rep pill lock + auto-jump; full suite passes
+- [x] 3.1 Expose per-rep completeness for the pill lock; render `rep-pill--locked` lock glyph
+- [x] 3.2 Add `.rep-pill--locked` CSS
+- [x] 3.3 Auto-navigate (full GET, no `?rep=`) to first not-fully-done rep; explicit `?rep=` not overridden
+- [x] 3.4 Tests for rep pill lock + auto-jump; full suite passes (92)
 
 #### Manual
 
-- [ ] 3.5 Rep pill lock + auto-land on first incomplete rep (manual check)
+- [x] 3.5 Rep pill lock + auto-land on first incomplete rep (manual check)

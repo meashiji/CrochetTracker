@@ -1,0 +1,10 @@
+<nav id="rep-pills" class="rep-pills {{ '' if element.repeat_count > 1 else 'is-hidden' }}"
+    aria-label="Repetitions"{% if oob %} hx-swap-oob="outerHTML"{% endif %}>
+    {% for n in rep_numbers %}
+    {% set rep_locked = n > 1 and not rep_complete_by_number.get(n - 1, false) %}
+    <a href="?rep={{ n }}" class="rep-pill{{ ' rep-pill--active' if n == rep_number }}{{ ' rep-pill--locked' if rep_locked else '' }}"
+        aria-label="{% if rep_locked %}Rep {{ n }} locked — finish the previous repetition first{% else %}Rep {{ n }}{% endif %}">
+        {% if rep_locked %}<span class="rep-pill-lock" aria-hidden="true">🔒</span>{% endif %}Rep {{ n }}
+    </a>
+    {% endfor %}
+</nav>
