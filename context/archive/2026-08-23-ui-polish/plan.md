@@ -83,7 +83,6 @@ Create `tokens.css` with complete token system (spacing, typography, color roles
 
 **Intent**: Import tokens; replace all hardcoded values with token references.
 
-**Contract**: 
 - Line 1: `@import "tokens.css";`
 - Every numeric value (padding, margin, gap, font-size, line-height, border-radius, box-shadow, color) replaced by `var(--token-name)`
 - No raw numbers/colors remain except `0` and `100%`

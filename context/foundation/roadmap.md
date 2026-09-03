@@ -3,7 +3,7 @@ project: CrochetTracker
 version: 1
 status: draft
 created: 2026-06-05
-updated: 2026-08-23
+updated: 2026-09-03
 prd_version: 1
 main_goal: market-feedback
 top_blocker: time
@@ -37,7 +37,7 @@ This is the moment the product hypothesis is proven: the app reliably answers "w
 | S-02 | row-marking-and-persistence  | mark a row (3 states) and return next day to find it still marked | S-01          | FR-006, FR-007, US-01                 | done     |
 | S-03 | repeats-and-stitch-position  | track repeat elements independently; record stitch position        | S-02          | FR-003, FR-010                        | done     |
 | S-04 | stitch-reference-panel       | open a reference panel showing stitch codes and descriptions       | F-02          | FR-009                                | done     |
-| P-01 | ui-polish                    | visual design pass — typography, colors, spacing, responsive       | S-02          | —                                     | proposed |
+| P-01 | ui-polish                    | visual design pass — typography, colors, spacing, responsive       | S-02          | —                                     | done |
 
 ## Streams
 
@@ -154,7 +154,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Which CSS framework — Tailwind CSS, Pico.css, or plain custom CSS? Owner: user. Block: no (decide in /10x-plan ui-polish).
 - **Risk:** Low — purely additive; no data model or route changes. Doing this before features stabilise risks rework if component structure changes.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -196,3 +196,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-02: user can set a row to one of three states (not started / in-progress / done), toggle between them; on reopening the project, the view jumps to the first unmarked row and shows the exact previously-marked state — no manual save required.** — Archived 2026-08-01 → `context/archive/2026-07-09-row-marking-and-persistence/`. Lesson: —.
 - **S-03: user can set a repeat count on an element (e.g., ×3) and track each repetition with its own independent row progress; user can record the specific stitch position they stopped at within an in-progress row (e.g., "stopped at stitch 14").** — Archived 2026-08-20 → `context/archive/2026-08-01-repeats-and-stitch-position/`. Lesson: —.
 - **S-04: user can open a reference panel showing 8 basic crochet stitches in US notation with descriptions; the popover is anchored under the header button, stays fixed while scrolling the pattern, and is fully accessible without auth barriers.** — Archived 2026-08-23 → `context/archive/2026-08-23-stitch-reference-panel/`. Lesson: —.
+
+- **P-01: (foundation) the app looks intentional — consistent typography, color palette, spacing, and readable layout on mobile and desktop; no raw browser-default styling.** — Archived 2026-09-03 → `context/archive/2026-08-23-ui-polish/`. Lesson: —.

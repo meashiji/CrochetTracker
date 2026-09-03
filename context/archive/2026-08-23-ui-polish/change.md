@@ -1,10 +1,10 @@
 ---
 change_id: ui-polish
 title: Visual design pass — typography, colors, spacing, responsive
-status: implementing
+status: archived
 created: 2026-08-23
-updated: 2026-08-28
-archived_at: null
+updated: 2026-09-03
+archived_at: 2026-09-03T06:55:30Z
 ---
 
 ## Notes
