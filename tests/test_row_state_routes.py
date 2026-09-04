@@ -655,6 +655,37 @@ async def test_blocked_advance_does_not_bump_project_updated_at(
     assert project.updated_at == updated_before
 
 
+async def test_failed_row_mark_keeps_db_state_and_returns_retry_signal(
+    test_user, async_client, db_session, project_element_rows, monkeypatch
+):
+    """A failed row write is non-successful and leaves the persisted state unchanged."""
+    from httpx import ASGITransport, AsyncClient
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from app.main import app
+
+    project, element, rows = project_element_rows
+    row = rows[0]
+    url = f"/projects/{project.id}/elements/{element.id}/reps/1/rows/{row.id}/state"
+
+    async def fail_commit(_session):
+        raise RuntimeError("simulated database outage")
+
+    monkeypatch.setattr(AsyncSession, "commit", fail_commit)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="https://testserver",
+        cookies=async_client.cookies,
+    ) as failing_client:
+        response = await failing_client.post(url, follow_redirects=False)
+
+    assert response.status_code == 500
+    assert "Please try again" in response.text
+    assert "row-item--in_progress" not in response.text
+    row_state = await _row_state(db_session, row.id)
+    assert row_state.state == RowStateEnum.not_started
+
+
 async def test_locked_rows_render_disabled(
     test_user, async_client, db_session, project_element_rows
 ):

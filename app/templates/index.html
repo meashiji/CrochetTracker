@@ -24,6 +24,40 @@
 </section>
 
 {% if user %}
+{% if recommendation %}
+<section class="panel resume-card" aria-labelledby="resume-card-title">
+    <div class="resume-card__content">
+        <p class="eyebrow">{{ recommendation.eyebrow }}</p>
+        <h2 id="resume-card-title">{{ recommendation.message }}</h2>
+        <div class="resume-card__details">
+            <div>
+                <p class="resume-card__project">{{ recommendation.project_name }}</p>
+                <div class="resume-card__element-row">
+                    <p class="resume-card__element">{{ recommendation.element_name }}</p>
+                    <span class="subtle resume-card__metrics">
+                        <span class="repeat-badge">×{{ recommendation.repeat_count }}</span>
+                        {% if recommendation.row_count > 0 %}
+                        {{ recommendation.row_count }} row{{ "s" if recommendation.row_count != 1 else "" }}
+                        <span class="state-breakdown">
+                            <span class="state-chip state-chip--done">● {{ recommendation.done_count }}</span>
+                            <span class="state-chip state-chip--in_progress">◐ {{ recommendation.in_progress_count }}</span>
+                            <span class="state-chip state-chip--not_started">○ {{ recommendation.not_started_count }}</span>
+                        </span>
+                        {% else %}
+                        No pattern yet
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="resume-card__mark">
+        <span class="resume-card__star" aria-hidden="true">✦</span>
+        <a class="btn" href="{{ recommendation.href }}">{{ recommendation.cta }}</a>
+    </div>
+</section>
+{% endif %}
+
 <section class="panel project-section">
     <div class="section-heading">
         <p class="eyebrow">Your projects</p>

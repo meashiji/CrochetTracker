@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-08-21 (Phase 3 complete — all six risks covered: #1 via `tests/test_row_state_routes.py` shipped with S-02/S-03, #5 via `migration-drift-check` CI gate in deploy.yml; rollout finished)
+> Last updated: 2026-09-04 (all six risks covered: #1 via the row-mark failure-path integration test, #5 via the `migration-drift-check` CI gate in deploy.yml; rollout finished)
 
 ---
 
@@ -80,7 +80,7 @@ as artifacts appear on disk.
 | # | Phase name | Goal | Risks covered | Test types | Status | Change folder |
 |---|-----------|------|---------------|-----------|--------|---------------|
 | 1 | Auth-boundary integration tests | Prove route protection and session validation work; bootstrap test infrastructure (httpx TestClient, pytest fixtures, test DB) | #2, #4 | Integration (TestClient, pytest fixtures, separate test DB) | complete | context/changes/testing-auth-boundary/ |
-| 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection and DB write correctness for core user flows | #3, #6 (#1 deferred — no implementing route exists) | Integration (multi-user fixtures, TestClient POST + DB verify) | complete | context/changes/testing-write-path-ownership/ |
+| 2 | Write-path + ownership integration tests | Prove cross-user IDOR protection, DB write correctness, and failed row-mark safety for core user flows | #1, #3, #6 | Integration (multi-user fixtures, TestClient POST + DB verify) | complete | context/changes/testing-write-path-ownership/ |
 | 3 | Migration drift quality gate | Name `alembic check` as a required CI gate and verify it catches real drift | #5 | CI gate naming (wiring deferred to Module 2 Lesson 5) | complete | — (done directly 2026-08-21, no change folder) |
 
 **Status vocabulary** (parser literals — do not rename):
@@ -103,9 +103,10 @@ as artifacts appear on disk.
 | Layer | Tool | Version | Notes |
 |-------|------|---------|-------|
 | Unit + integration | pytest | 9.1.1 | Configured in `pyproject.toml`; run with `uv run pytest` |
-| HTTP test client | httpx + pytest-asyncio | none yet — see §3 Phase 1 | Required for FastAPI async route testing; not yet in dev deps |
-| DB fixtures | pytest fixtures + separate test DB | none yet — see §3 Phase 1 | Need a test-scoped Postgres DB; local dev DB is on 127.0.0.1:5433 |
-| Lint / typecheck | none yet | — | Not configured; add if deadlines allow |
+| HTTP test client | httpx + pytest-asyncio | configured in `pyproject.toml` | Used by `tests/conftest.py` with `ASGITransport` for async route integration tests |
+| DB fixtures | pytest fixtures + separate test DB | implemented in `tests/conftest.py` | Test-scoped Postgres database on 127.0.0.1:5433; child records require FK-safe teardown |
+| Lint | Black + Ruff | local pre-commit hooks | Configured in `.pre-commit-config.yaml`; not currently a CI quality gate |
+| Typecheck | none | — | Not configured; optional follow-up |
 | E2e | none planned | — | Jinja2 templates excluded from test budget (§7); classic integration covers the critical paths |
 
 **Stack grounding tools (current session):**
@@ -122,7 +123,7 @@ as artifacts appear on disk.
 |------|-------|-----------|---------|
 | Unit + integration (pytest) | local + CI | **required** (CI `test` job gates deploy since 2026-08-21) | Logic regressions, auth bypass, IDOR, write-path failures |
 | `alembic check` | local + CI | **required** (§3 Phase 3 shipped 2026-08-21 — `migration-drift-check` job gates deploy) | Migration drift between SQLModel models and DB schema |
-| Lint | local + CI | planned | Syntactic drift (no tool configured yet) |
+| Lint | local pre-commit | optional | Black formatting and Ruff checks; no CI gate currently configured |
 | Typecheck | local + CI | planned | Type drift (no tool configured yet) |
 | Pre-prod smoke | between merge + prod | optional | Environment-specific failures on Fly |
 
@@ -236,6 +237,10 @@ row-mark feature) doesn't exist yet.
 **Teardown for multi-table writes**: delete in FK-safe order — RowState → Row + ElementRepetition → Element
 → (Project is handled by the owning fixture's teardown). See `_teardown()` helper in `test_pattern_paste.py`.
 
+**Failure-path reference for Risk #1**: `test_failed_row_mark_keeps_db_state_and_returns_retry_signal`
+in `tests/test_row_state_routes.py` simulates a commit failure, verifies a non-success response and retry
+message, and queries the database to confirm the row state did not change.
+
 ### 6.5 Checking migration drift
 
 The gate is the `migration-drift-check` job in `.github/workflows/deploy.yml`; `deploy` declares
@@ -286,9 +291,9 @@ major version, bump the service image to match.
 
 ## 8. Freshness Ledger
 
-- Strategy (§1–§5) last reviewed: 2026-06-27
-- Stack versions last verified: 2026-06-27
-- AI-native tool references last verified: 2026-06-27 (no AI-native phase; re-evaluate at --refresh if product gains AI output surfaces)
+- Strategy (§1–§5) last reviewed: 2026-09-04
+- Stack versions last verified: 2026-09-04
+- AI-native tool references last verified: 2026-09-04 (no AI-native phase; re-evaluate at --refresh if product gains AI output surfaces)
 
 Refresh (`/10x-test-plan --refresh`) when:
 
