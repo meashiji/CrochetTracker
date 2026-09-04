@@ -479,6 +479,16 @@ textarea {
 
 /* ── Projects ─────────────────────────────────────── */
 
+.project-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.project-title-row h1 {
+  margin: 0;
+}
+
 .project-section {
   margin-top: var(--space-6);
 }

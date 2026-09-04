@@ -396,12 +396,22 @@ async def project_rename(
     request: Request,
     project_id: int,
     name: str = Form(...),
+    return_to: str = Form(default="list"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
     project = await _get_project(project_id, user, session)
     name = name.strip()
     if not name:
+        if return_to == "detail":
+            return await _render_project_detail(
+                request,
+                user,
+                project,
+                session,
+                rename_error="Project name is required.",
+                rename_open=True,
+            )
         return await _render_project_list(
             request,
             user,
@@ -410,6 +420,15 @@ async def project_rename(
             rename_error_project_id=project.id,
         )
     if len(name) > 50:
+        if return_to == "detail":
+            return await _render_project_detail(
+                request,
+                user,
+                project,
+                session,
+                rename_error="Project name must be 50 characters or fewer.",
+                rename_open=True,
+            )
         return await _render_project_list(
             request,
             user,
@@ -425,7 +444,8 @@ async def project_rename(
     # Commit before redirect so the follow-up GET sees the new name.
     await session.commit()
 
-    return RedirectResponse(url="/projects/", status_code=303)
+    redirect_url = f"/projects/{project.id}" if return_to == "detail" else "/projects/"
+    return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @router.post("/{project_id}/delete")

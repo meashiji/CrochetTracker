@@ -66,6 +66,46 @@ async def test_rename_too_long_name_shows_error(test_user, async_client, db_sess
     await db_session.commit()
 
 
+async def test_project_detail_shows_delete_control(test_user, async_client, db_session):
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    response = await async_client.get(f"/projects/{project.id}", follow_redirects=False)
+
+    assert response.status_code == 200
+    assert f'action="/projects/{project.id}/delete"' in response.text
+    assert 'class="icon-button" aria-label="Delete project"' in response.text
+    assert 'data-project-name="Sunset shawl"' in response.text
+
+    await db_session.execute(delete(Project).where(Project.id == project.id))
+    await db_session.commit()
+
+
+async def test_project_detail_renames_project_and_stays_on_detail(
+    test_user, async_client, db_session
+):
+    project = Project(user_id=test_user.id, name="Sunset shawl")
+    db_session.add(project)
+    await db_session.commit()
+
+    response = await async_client.post(
+        f"/projects/{project.id}/rename",
+        data={"name": "Winter shawl", "return_to": "detail"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == f"/projects/{project.id}"
+
+    follow_up = await async_client.get(response.headers["location"])
+    assert follow_up.status_code == 200
+    assert "Winter shawl" in follow_up.text
+
+    await db_session.execute(delete(Project).where(Project.id == project.id))
+    await db_session.commit()
+
+
 async def test_rename_other_user_sees_404_and_does_not_change_name(
     test_user, second_user, async_client, db_session
 ):

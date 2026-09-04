@@ -5,7 +5,25 @@
 <section class="panel">
     <p class="breadcrumb"><a href="/projects/">Projects</a> › {{ project.name }}</p>
     <p class="eyebrow">Project</p>
-    <h1>{{ project.name }}</h1>
+    <div class="project-title-row">
+        <h1 id="project-title" class="{{ 'is-hidden' if rename_open else '' }}">{{ project.name }}</h1>
+        <form method="post" action="/projects/{{ project.id }}/rename" id="project-rename-form"
+            class="rename-form {{ '' if rename_open else 'is-hidden' }}">
+            <input type="hidden" name="return_to" value="detail">
+            <label for="project-rename-input" class="sr-only">Project name</label>
+            <input type="text" id="project-rename-input" name="name" value="{{ project.name }}"
+                maxlength="50" placeholder="Project name" required>
+            <button type="submit">Save name</button>
+            <button type="button" id="project-rename-cancel" class="btn btn--outline">Cancel</button>
+        </form>
+        <button type="button" id="project-rename-toggle" class="icon-button {{ 'is-hidden' if rename_open else '' }}"
+            aria-label="Rename project" aria-expanded="{{ 'true' if rename_open else 'false' }}">✏️</button>
+        <form method="post" action="/projects/{{ project.id }}/delete"
+            class="delete-form project-detail-delete-form" data-project-name="{{ project.name }}">
+            <button type="submit" class="icon-button" aria-label="Delete project">🗑️</button>
+        </form>
+    </div>
+    {% if rename_error %}<p id="project-rename-error" class="form-error" aria-live="polite">{{ rename_error }}</p>{% endif %}
     <div class="actions">
         <a class="btn" href="/projects/{{ project.id }}/elements/new">Add element</a>
     </div>
@@ -46,5 +64,49 @@
         if (!e.persisted) return;
         htmx.ajax("GET", window.location.href, {target: "#element-list", select: "#element-list"});
     });
+
+    (function () {
+        var toggle = document.getElementById("project-rename-toggle");
+        var form = document.getElementById("project-rename-form");
+        var cancel = document.getElementById("project-rename-cancel");
+        var title = document.getElementById("project-title");
+        if (!toggle || !form) return;
+
+        var input = form.querySelector("input[name='name']");
+
+        function open() {
+            form.classList.remove("is-hidden");
+            if (title) title.classList.add("is-hidden");
+            toggle.classList.add("is-hidden");
+            toggle.setAttribute("aria-expanded", "true");
+            if (input) input.focus();
+        }
+
+        function close() {
+            form.classList.add("is-hidden");
+            if (title) title.classList.remove("is-hidden");
+            toggle.classList.remove("is-hidden");
+            toggle.setAttribute("aria-expanded", "false");
+        }
+
+        toggle.addEventListener("click", function () {
+            toggle.getAttribute("aria-expanded") === "true" ? close() : open();
+        });
+
+        if (cancel) cancel.addEventListener("click", close);
+    })();
+
+    (function () {
+        var form = document.querySelector(".project-detail-delete-form");
+        if (!form) return;
+
+        form.addEventListener("submit", function (e) {
+            var name = form.dataset.projectName || "this project";
+            var ok = confirm(
+                "Delete \"" + name + "\"? This cannot be undone — all elements and progress will be lost."
+            );
+            if (!ok) e.preventDefault();
+        });
+    })();
 </script>
 {% endblock %}
