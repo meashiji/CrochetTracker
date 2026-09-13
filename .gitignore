@@ -2,6 +2,7 @@
 CLAUDE.md
 AGENTS.md
 .claude/
+context/mvp-check.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
