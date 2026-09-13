@@ -1,10 +1,10 @@
 ---
 change_id: resume-recommendation
 title: Recommend a project to resume on the homepage
-status: preparing
+status: archived
 created: 2026-09-03
-updated: 2026-09-03
-archived_at: null
+updated: 2026-09-13
+archived_at: 2026-09-13T20:20:45Z
 ---
 
 ## Notes
