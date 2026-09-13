@@ -4,8 +4,8 @@
 <section class="panel hero">
     <div>
         <p class="eyebrow">Crochet planner</p>
-        <h1>Keep your handmade ideas organized in a softer, colorful space.</h1>
-        <p class="lead">Track projects, notes, and next steps with a calm palette inspired by yarn and petals.</p>
+        <h1>Keep your handmade ideas organized in a colorful space.</h1>
+        <p class="lead">You can track projects, notes, patterns, and next steps.</p>
         <div class="actions">
             <a class="btn" href="/projects/new">Start a new project</a>
             <a class="btn btn--outline" href="/projects/">View projects</a>
@@ -40,8 +40,10 @@
                         {{ recommendation.row_count }} row{{ "s" if recommendation.row_count != 1 else "" }}
                         <span class="state-breakdown">
                             <span class="state-chip state-chip--done">● {{ recommendation.done_count }}</span>
-                            <span class="state-chip state-chip--in_progress">◐ {{ recommendation.in_progress_count }}</span>
-                            <span class="state-chip state-chip--not_started">○ {{ recommendation.not_started_count }}</span>
+                            <span class="state-chip state-chip--in_progress">◐ {{ recommendation.in_progress_count
+                                }}</span>
+                            <span class="state-chip state-chip--not_started">○ {{ recommendation.not_started_count
+                                }}</span>
                         </span>
                         {% else %}
                         No pattern yet
