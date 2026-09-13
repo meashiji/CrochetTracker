@@ -77,9 +77,20 @@ jobs:
       - run: uv sync --frozen
       - run: uv run pytest -q
 
+  security-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --frozen
+      - run: uv run pip-audit
+
   deploy:
     name: Deploy
-    needs: [migration-drift-check, test]
+    needs: [migration-drift-check, test, security-audit]
     runs-on: ubuntu-latest
     concurrency: deploy-group
     steps:
